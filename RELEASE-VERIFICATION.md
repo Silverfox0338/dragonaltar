@@ -1,20 +1,20 @@
 # Release Verification
 
-Release version: 1.4.16
+Release version: 1.4.17
 
-Artifact: `target/DragonAltar-1.4.16.jar`
+Artifact: `target/DragonAltar-1.4.17.jar`
 
-Artifact size: 465,349 bytes, 454.44 KiB
+Artifact size: 467,971 bytes, 457.00 KiB
 
-SHA-256: `99bb8f35c7fbe46f2bd03d1153f83572b9313d2d050fc8e0f29c1a4c52d40ff3`
+SHA-256: `214644f656f22cb24c321432b8174ee481aecef6d964831f655d80a236c0de6c`
 
-Checksum file: `target/DragonAltar-1.4.16.jar.sha256`
+Checksum file: `target/DragonAltar-1.4.17.jar.sha256`
 
 ## Automated verification
 
 - `mvn clean package`: passed
 - Test suites: 28
-- Tests: 81
+- Tests: 83
 - Failures: 0
 - Errors: 0
 - Skipped: 0
@@ -41,7 +41,7 @@ The local Maven runtime was JDK 25.0.3 and compiled with `--release 21`. The gen
 - Command: `/dragon`
 - Alias: `/dragonaltar`
 - Optional dependencies: PlaceholderAPI, WorldEdit, ScaledEnderDragon
-- Maven release version and filtered `plugin.yml` version: 1.4.16
+- Maven release version and filtered `plugin.yml` version: 1.4.17
 
 ## Remaining manual and legal gates
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.17 - 2026-07-29
+
+- Removed administrative and developer holders from every player-facing soul-history field.
+- Added private-custody metadata so admin test transfers remain auditable without entering the public holder chain.
+- Kept compatibility with 1.4.16 entries by recognizing the recorded admin actor and current operator status.
+- Displays privately held souls as dormant with no public holder until they return to a normal player.
+
 ## 1.4.16 - 2026-07-29
 
 First public changelog baseline. DragonAltar was a private project before 1.4.16, so earlier private releases are intentionally not reconstructed here.

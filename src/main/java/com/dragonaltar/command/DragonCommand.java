@@ -4,6 +4,7 @@ import com.dragonaltar.DragonAltarPlugin;
 import com.dragonaltar.ability.DragonAbility;
 import com.dragonaltar.config.ServerMode;
 import com.dragonaltar.soul.DragonSoul;
+import com.dragonaltar.soul.SoulHistoryEntry;
 import com.dragonaltar.soul.SoulIdentity;
 import com.dragonaltar.player.*;
 import net.kyori.adventure.text.Component;
@@ -177,13 +178,13 @@ public final class DragonCommand implements TabExecutor {
         if(Set.of("ability","cooldown","energy").contains(a[1].toLowerCase()))require(s,"dragonaltar.admin.abilities");else require(s,"dragonaltar.admin.souls");
         if(a[1].equals("refunds")&&a.length>3){Player target=requiredOnline(a[3]);if(a[2].equals("inspect"))s.sendMessage("Pending refund entries: "+plugin.rituals().pendingRefundCount(target.getUniqueId()));else if(a[2].equals("give"))plugin.rituals().refundPending(target);return true;}
         if(a[1].equals("list")) { for(DragonSoul soul:plugin.souls().all()) s.sendMessage(soul.id()+": "+soul.state()+" -> "+soul.holder()); return true; }
-        if(a[1].equals("grant")&&a.length>2) {Player target=requiredOnline(a[2]);String id=a.length>3?a[3]:plugin.souls().all().stream().filter(x->x.holder()==null).findFirst().orElseThrow().id();danger(s,"admin-grant",List.of(target.getUniqueId().toString(),id),()->{plugin.souls().assign(id,target.getUniqueId(),adminReason("ADMIN_GRANT",s));plugin.dragonborn().apply(target);});return true;}
+        if(a[1].equals("grant")&&a.length>2) {Player target=requiredOnline(a[2]);String id=a.length>3?a[3]:plugin.souls().all().stream().filter(x->x.holder()==null).findFirst().orElseThrow().id();danger(s,"admin-grant",List.of(target.getUniqueId().toString(),id),()->{plugin.souls().assign(id,target.getUniqueId(),adminReason("ADMIN_GRANT",s,target.getUniqueId()));plugin.dragonborn().apply(target);});return true;}
         if(a[1].equals("inspect")&&a.length>2){Player target=requiredOnline(a[2]);s.sendMessage(plugin.souls().byHolder(target.getUniqueId()).map(Object::toString).orElse("Not Dragonborn"));return true;}
-        if(a[1].equals("remove")&&a.length>2){Player target=requiredOnline(a[2]);DragonSoul held=plugin.souls().byHolder(target.getUniqueId()).orElseThrow(()->new IllegalArgumentException("Player holds no soul"));if(a.length>3&&!held.id().equals(soulId(a[3])))throw new IllegalArgumentException(target.getName()+" holds "+SoulIdentity.displayName(held.id())+", not "+a[3]);danger(s,"admin-remove",List.of(target.getUniqueId().toString()),()->{plugin.souls().removeHolder(target.getUniqueId(),adminReason("ADMIN_REMOVE",s));plugin.dragonborn().remove(target);});return true;}
-        if(a[1].equals("transfer")&&a.length>3){Player from=requiredOnline(a[2]),to=requiredOnline(a[3]);DragonSoul soul=plugin.souls().byHolder(from.getUniqueId()).orElseThrow(()->new IllegalArgumentException("Source holds no soul"));danger(s,"admin-transfer",List.of(from.getUniqueId().toString(),to.getUniqueId().toString()),()->{plugin.souls().assign(soul.id(),to.getUniqueId(),adminReason("ADMIN_TRANSFER",s));plugin.dragonborn().remove(from);plugin.dragonborn().apply(to);});return true;}
-        if(a[1].equals("transfer-soul")&&a.length>3){Player to=requiredOnline(a[3]);danger(s,"admin-transfer-soul",List.of(a[2],to.getUniqueId().toString()),()->{plugin.souls().assign(a[2],to.getUniqueId(),adminReason("ADMIN_TRANSFER",s));plugin.dragonborn().apply(to);});return true;}
-        if(a[1].equals("make-pending")&&a.length>2){danger(s,"admin-make-pending",List.of(a[2]),()->plugin.souls().pending(a[2],adminReason("ADMIN_PENDING",s)));return true;}
-        if(a[1].equals("reincarnate")&&a.length>2){List<Player> eligible=plugin.eligibility().eligible(Bukkit.getOnlinePlayers());if(eligible.isEmpty())throw new IllegalStateException("No eligible player");Player to=eligible.get(new Random().nextInt(eligible.size()));danger(s,"admin-reincarnate",List.of(a[2],to.getUniqueId().toString()),()->{plugin.souls().assign(a[2],to.getUniqueId(),adminReason("ADMIN_REINCARNATE",s));plugin.dragonborn().apply(to);});return true;}
+        if(a[1].equals("remove")&&a.length>2){Player target=requiredOnline(a[2]);DragonSoul held=plugin.souls().byHolder(target.getUniqueId()).orElseThrow(()->new IllegalArgumentException("Player holds no soul"));if(a.length>3&&!held.id().equals(soulId(a[3])))throw new IllegalArgumentException(target.getName()+" holds "+SoulIdentity.displayName(held.id())+", not "+a[3]);danger(s,"admin-remove",List.of(target.getUniqueId().toString()),()->{plugin.souls().removeHolder(target.getUniqueId(),adminReason("ADMIN_REMOVE",s,target.getUniqueId()));plugin.dragonborn().remove(target);});return true;}
+        if(a[1].equals("transfer")&&a.length>3){Player from=requiredOnline(a[2]),to=requiredOnline(a[3]);DragonSoul soul=plugin.souls().byHolder(from.getUniqueId()).orElseThrow(()->new IllegalArgumentException("Source holds no soul"));danger(s,"admin-transfer",List.of(from.getUniqueId().toString(),to.getUniqueId().toString()),()->{plugin.souls().assign(soul.id(),to.getUniqueId(),adminReason("ADMIN_TRANSFER",s,from.getUniqueId(),to.getUniqueId()));plugin.dragonborn().remove(from);plugin.dragonborn().apply(to);});return true;}
+        if(a[1].equals("transfer-soul")&&a.length>3){Player to=requiredOnline(a[3]);DragonSoul soul=plugin.souls().byId(a[2]).orElseThrow(()->new IllegalArgumentException("Unknown soul"));danger(s,"admin-transfer-soul",List.of(a[2],to.getUniqueId().toString()),()->{plugin.souls().assign(a[2],to.getUniqueId(),adminReason("ADMIN_TRANSFER",s,soul.holder(),to.getUniqueId()));plugin.dragonborn().apply(to);});return true;}
+        if(a[1].equals("make-pending")&&a.length>2){DragonSoul soul=plugin.souls().byId(a[2]).orElseThrow(()->new IllegalArgumentException("Unknown soul"));danger(s,"admin-make-pending",List.of(a[2]),()->plugin.souls().pending(a[2],adminReason("ADMIN_PENDING",s,soul.holder())));return true;}
+        if(a[1].equals("reincarnate")&&a.length>2){List<Player> eligible=plugin.eligibility().eligible(Bukkit.getOnlinePlayers());if(eligible.isEmpty())throw new IllegalStateException("No eligible player");Player to=eligible.get(new Random().nextInt(eligible.size()));DragonSoul soul=plugin.souls().byId(a[2]).orElseThrow(()->new IllegalArgumentException("Unknown soul"));danger(s,"admin-reincarnate",List.of(a[2],to.getUniqueId().toString()),()->{plugin.souls().assign(a[2],to.getUniqueId(),adminReason("ADMIN_REINCARNATE",s,soul.holder(),to.getUniqueId()));plugin.dragonborn().apply(to);});return true;}
         if(a[1].equals("fix-passives")&&a.length>2){plugin.dragonborn().apply(requiredOnline(a[2]));return true;}
         if(a[1].equals("repair")&&a.length>2){Player target=requiredOnline(a[2]);if(plugin.souls().byHolder(target.getUniqueId()).isEmpty())throw new IllegalArgumentException("Player is not Dragonborn");plugin.abilities().clearCache(target);plugin.dragonborn().apply(target);plugin.dragonborn().ensureFocus(target);plugin.abilities().setEnergy(target,plugin.abilities().maxEnergy());s.sendMessage("Repaired Dragonborn state for "+target.getName()+": passives applied, Focus verified, ability cache cleared, energy filled, HUD preference preserved.");return true;}
         if(a[1].equals("ability")&&a.length>4){Player target=requiredOnline(a[3]);if(a[2].equals("select"))plugin.abilities().select(target,a[4]);else if(a[2].equals("cast")){plugin.abilities().select(target,a[4]);plugin.abilities().cast(target);}return true;}
@@ -197,14 +198,14 @@ public final class DragonCommand implements TabExecutor {
             Player target=requiredOnline(a[2]);String expected=soulId(a[3]);
             DragonSoul held=plugin.souls().byHolder(target.getUniqueId()).orElseThrow(()->new IllegalArgumentException("Player holds no soul"));
             if(!held.id().equals(expected))throw new IllegalArgumentException(target.getName()+" holds "+SoulIdentity.displayName(held.id())+", not "+SoulIdentity.displayName(expected));
-            danger(s,"admin-remove",List.of(target.getUniqueId().toString()),()->{plugin.souls().removeHolder(target.getUniqueId(),adminReason("ADMIN_FORCE_REMOVE",s));plugin.dragonborn().remove(target);});
+            danger(s,"admin-remove",List.of(target.getUniqueId().toString()),()->{plugin.souls().removeHolder(target.getUniqueId(),adminReason("ADMIN_FORCE_REMOVE",s,target.getUniqueId()));plugin.dragonborn().remove(target);});
             return true;
         }
         if(a.length>1&&a[1].equalsIgnoreCase("force-transfer")&&a.length>4){
             String expected=soulId(a[2]);Player from=requiredOnline(a[3]),to=requiredOnline(a[4]);
             DragonSoul held=plugin.souls().byHolder(from.getUniqueId()).orElseThrow(()->new IllegalArgumentException("Source holds no soul"));
             if(!held.id().equals(expected))throw new IllegalArgumentException(from.getName()+" holds "+SoulIdentity.displayName(held.id())+", not "+SoulIdentity.displayName(expected));
-            danger(s,"admin-transfer",List.of(from.getUniqueId().toString(),to.getUniqueId().toString()),()->{plugin.souls().assign(held.id(),to.getUniqueId(),adminReason("ADMIN_FORCE_TRANSFER",s));plugin.dragonborn().remove(from);plugin.dragonborn().apply(to);});
+            danger(s,"admin-transfer",List.of(from.getUniqueId().toString(),to.getUniqueId().toString()),()->{plugin.souls().assign(held.id(),to.getUniqueId(),adminReason("ADMIN_FORCE_TRANSFER",s,from.getUniqueId(),to.getUniqueId()));plugin.dragonborn().remove(from);plugin.dragonborn().apply(to);});
             return true;
         }
         throw new IllegalArgumentException("Use /dragon soul force-remove <player> <soul> or force-transfer <soul> <from> <to>");
@@ -249,9 +250,9 @@ public final class DragonCommand implements TabExecutor {
         if(a.length>3&&a[1].equals("soul")&&a[2].equals("dump")){s.sendMessage(plugin.souls().byId(a[3]).map(x->x.id()+" "+x.state()+" holder="+x.holder()+" reserved="+x.reservedFor()+" generation="+x.generation()+" transfers="+x.transferCount()+" lineage="+x.lineage()).orElse("Unknown soul"));return true;}
         if(a.length>3&&a[1].equals("soul")&&a[2].equals("create")){plugin.souls().create(a[3]);return true;}
         if(a.length>3&&a[1].equals("soul")&&a[2].equals("delete")){danger(s,"soul-delete",List.of(a[3]),()->plugin.souls().delete(a[3]));return true;}
-        if(a.length>4&&a[1].equals("soul")&&a[2].equals("assign")){Player p=requiredOnline(a[4]);danger(s,"soul-assign",List.of(a[3],p.getUniqueId().toString()),()->{plugin.souls().assign(a[3],p.getUniqueId(),adminReason("DEV_ASSIGN",s));plugin.dragonborn().apply(p);});return true;}
-        if(a.length>3&&a[1].equals("soul")&&a[2].equals("unassign")){danger(s,"soul-unassign",List.of(a[3]),()->plugin.souls().pending(a[3],adminReason("DEV_UNASSIGN",s)));return true;}
-        if(a.length>4&&a[1].equals("soul")&&a[2].equals("setstate")){var state=com.dragonaltar.soul.DragonSoulState.valueOf(a[4].toUpperCase());danger(s,"soul-setstate",List.of(a[3],state.name()),()->plugin.souls().setState(a[3],state,";admin="+senderId(s)));return true;}
+        if(a.length>4&&a[1].equals("soul")&&a[2].equals("assign")){Player p=requiredOnline(a[4]);DragonSoul soul=plugin.souls().byId(a[3]).orElseThrow(()->new IllegalArgumentException("Unknown soul"));danger(s,"soul-assign",List.of(a[3],p.getUniqueId().toString()),()->{plugin.souls().assign(a[3],p.getUniqueId(),adminReason("DEV_ASSIGN",s,soul.holder(),p.getUniqueId()));plugin.dragonborn().apply(p);});return true;}
+        if(a.length>3&&a[1].equals("soul")&&a[2].equals("unassign")){DragonSoul soul=plugin.souls().byId(a[3]).orElseThrow(()->new IllegalArgumentException("Unknown soul"));danger(s,"soul-unassign",List.of(a[3]),()->plugin.souls().pending(a[3],adminReason("DEV_UNASSIGN",s,soul.holder())));return true;}
+        if(a.length>4&&a[1].equals("soul")&&a[2].equals("setstate")){var state=com.dragonaltar.soul.DragonSoulState.valueOf(a[4].toUpperCase());DragonSoul soul=plugin.souls().byId(a[3]).orElseThrow(()->new IllegalArgumentException("Unknown soul"));String metadata=adminMetadata(s,soul.holder());danger(s,"soul-setstate",List.of(a[3],state.name()),()->plugin.souls().setState(a[3],state,metadata));return true;}
         if(a.length>2&&a[1].equals("animation")&&a[2].equals("list")) { s.sendMessage("Animations: "+String.join(", ",plugin.animations().ids())); return true; }
         if(a.length>3&&a[1].equals("animation")&&a[2].equals("play")) { Player p=a.length>4?requiredOnline(a[4]):s instanceof Player player?player:null; Location at=p==null?plugin.configuredLocation("altar.yml","altar-center"):p.getLocation(); if(at==null)throw new IllegalStateException("No animation origin");UUID id=plugin.animations().play(a[3],at,p);if(p!=null)animationSessions.put(p.getUniqueId(),id);return true; }
         if(a.length>2&&a[1].equals("animation")&&a[2].equals("stop")){Player p=player(s);UUID id=animationSessions.remove(p.getUniqueId());if(id!=null)plugin.animations().stop(id);return true;}
@@ -281,7 +282,21 @@ public final class DragonCommand implements TabExecutor {
     private void status(CommandSender s){String identity="No";if(s instanceof Player p)identity=plugin.souls().byHolder(p.getUniqueId()).map(soul->SoulIdentity.displayName(soul.id())).orElse("No");plugin.messages().send(s,"player-status","event",plugin.dragonEvent().state().name(),"altar",plugin.validateSetup(),"dragonborn",identity);}
     private void history(CommandSender s,String[] a){
         if(s instanceof Player player&&a.length==1){plugin.soulHistoryMenu().open(player);return;}
-        UUID filter=a.length>1?Bukkit.getOfflinePlayer(a[1]).getUniqueId():(s instanceof Player p?p.getUniqueId():null);int count=0;if(filter!=null){for(String line:plugin.players().history(filter)){String[] parts=line.split("\\|");String soul=parts.length==0?"Soul":SoulIdentity.displayName(parts[parts.length-1]);plugin.messages().send(s,"history-entry","soul",soul,"entry",SoulIdentity.replaceIds(line));count++;}}else for(DragonSoul soul:plugin.souls().all())for(String line:soul.lineage()){plugin.messages().send(s,"history-entry","soul",SoulIdentity.displayName(soul.id()),"entry",SoulIdentity.replaceIds(line));count++;}if(count==0)plugin.messages().send(s,"history-empty");
+        UUID filter=a.length>1?Bukkit.getOfflinePlayer(a[1]).getUniqueId():(s instanceof Player p?p.getUniqueId():null);
+        if(s instanceof Player&&filter!=null&&privateHistoryPlayer(filter)){plugin.messages().send(s,"history-empty");return;}
+        int count=0;if(filter!=null){for(String line:plugin.players().history(filter)){String[] parts=line.split("\\|");String soul=parts.length==0?"Soul":SoulIdentity.displayName(parts[parts.length-1]);plugin.messages().send(s,"history-entry","soul",soul,"entry",SoulIdentity.replaceIds(line));count++;}}else for(DragonSoul soul:plugin.souls().all())for(String line:soul.lineage()){plugin.messages().send(s,"history-entry","soul",SoulIdentity.displayName(soul.id()),"entry",SoulIdentity.replaceIds(line));count++;}if(count==0)plugin.messages().send(s,"history-empty");
+    }
+    private boolean privateHistoryPlayer(UUID id){
+        Player online=Bukkit.getPlayer(id);
+        if(online!=null&&(online.hasPermission("dragonaltar.admin")
+                ||online.hasPermission("dragonaltar.admin.souls")
+                ||online.hasPermission("dragonaltar.developer")))return true;
+        if(Bukkit.getOfflinePlayer(id).isOp())return true;
+        for(DragonSoul soul:plugin.souls().all())for(String raw:soul.lineage()){
+            SoulHistoryEntry entry=SoulHistoryEntry.parse(raw);
+            if(entry!=null&&(id.equals(entry.adminActor())||entry.privatePlayers().contains(id)))return true;
+        }
+        return false;
     }
     private void help(CommandSender s){if(s instanceof Player p)plugin.helpMenu().open(p);else plugin.messages().send(s,"help");}
     private static Location setupLocation(Player player,String[] args,int coordinateStart) {
@@ -531,7 +546,25 @@ public final class DragonCommand implements TabExecutor {
         OfflinePlayer player=Bukkit.getOfflinePlayer(id);return player.getName()==null?"Unknown player ("+id.toString().substring(0,8)+")":player.getName();
     }
     private static String soulName(String id){return SoulIdentity.displayName(id);}
-    private static String adminReason(String reason,CommandSender sender){return reason+";admin="+senderId(sender);}
+    private static String adminReason(String reason,CommandSender sender,UUID... participants){
+        return reason+adminMetadata(sender,participants);
+    }
+    private static String adminMetadata(CommandSender sender,UUID... participants){
+        UUID actor=senderId(sender);
+        Set<UUID> hidden=new LinkedHashSet<>();
+        for(UUID participant:participants){
+            if(participant==null)continue;
+            Player online=Bukkit.getPlayer(participant);
+            boolean administrator=participant.equals(actor)
+                    || online!=null&&(online.hasPermission("dragonaltar.admin")
+                    || online.hasPermission("dragonaltar.admin.souls")
+                    || online.hasPermission("dragonaltar.developer"))
+                    || Bukkit.getOfflinePlayer(participant).isOp();
+            if(administrator)hidden.add(participant);
+        }
+        return ";admin="+actor+(hidden.isEmpty()?"":";hidden="+String.join(",",
+                hidden.stream().map(UUID::toString).toList()));
+    }
     private static String soulId(String value){
         for(SoulIdentity identity:SoulIdentity.values())
             if(identity.id().equalsIgnoreCase(value)||identity.displayName().equalsIgnoreCase(value))return identity.id();

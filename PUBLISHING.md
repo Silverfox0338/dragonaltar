@@ -29,7 +29,7 @@ DragonAltar uses displays and particles for staged effects. It does not create r
 ## Installation
 
 1. Stop Paper 1.21.4.
-2. Place `DragonAltar-1.4.16.jar` in `plugins`.
+2. Place `DragonAltar-1.4.17.jar` in `plugins`.
 3. Start with Java 21.
 4. Complete `/dragon setup begin`, `/dragon setup save`, and `/dragon setup validate`.
 5. Review the generated configuration and complete the live release checklist.

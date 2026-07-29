@@ -12,7 +12,7 @@ import java.util.UUID;
  * without a data migration.
  */
 public record SoulHistoryEntry(Instant timestamp, String from, String to, String reason, List<UUID> callers,
-                               UUID killer, UUID adminActor) {
+                               UUID killer, UUID adminActor, List<UUID> hiddenPlayers) {
     public static SoulHistoryEntry parse(String value) {
         if (value == null) return null;
         String[] parts = value.split("\\|", 4);
@@ -24,6 +24,7 @@ public record SoulHistoryEntry(Instant timestamp, String from, String to, String
             List<UUID> callers = new ArrayList<>();
             UUID killer = null;
             UUID adminActor = null;
+            List<UUID> hiddenPlayers = new ArrayList<>();
             for (int i = 1; i < reasonParts.length; i++) {
                 if (reasonParts[i].startsWith("callers=")) for (String caller : reasonParts[i].substring(8).split(",")) {
                     try { callers.add(UUID.fromString(caller)); }
@@ -37,9 +38,13 @@ public record SoulHistoryEntry(Instant timestamp, String from, String to, String
                     try { adminActor = UUID.fromString(reasonParts[i].substring(6)); }
                     catch (IllegalArgumentException ignored) {}
                 }
+                if (reasonParts[i].startsWith("hidden=")) for (String hidden : reasonParts[i].substring(7).split(",")) {
+                    try { hiddenPlayers.add(UUID.fromString(hidden)); }
+                    catch (IllegalArgumentException ignored) {}
+                }
             }
             return new SoulHistoryEntry(Instant.parse(parts[0]), parts[1], parts[2], reason,
-                    List.copyOf(callers), killer, adminActor);
+                    List.copyOf(callers), killer, adminActor, List.copyOf(hiddenPlayers));
         } catch (RuntimeException ignored) {
             return null;
         }
@@ -47,6 +52,12 @@ public record SoulHistoryEntry(Instant timestamp, String from, String to, String
 
     public UUID fromPlayer() { return player(from); }
     public UUID toPlayer() { return player(to); }
+    public List<UUID> privatePlayers() {
+        java.util.LinkedHashSet<UUID> result = new java.util.LinkedHashSet<>(hiddenPlayers);
+        if (adminActor != null && (adminActor.equals(fromPlayer()) || adminActor.equals(toPlayer())))
+            result.add(adminActor);
+        return List.copyOf(result);
+    }
 
     public String transferType() {
         String normalized = reason.toUpperCase(Locale.ROOT);

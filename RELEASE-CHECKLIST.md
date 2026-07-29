@@ -11,7 +11,7 @@
 ## Clean installation
 
 - [ ] Paper 1.21.4 starts with Java 21
-- [ ] DragonAltar 1.4.16 enables without warnings or exceptions
+- [ ] DragonAltar 1.4.17 enables without warnings or exceptions
 - [ ] Six editable YAML files and all runtime directories are created
 - [ ] No soul, event crystal, altar display, or task appears before setup requires it
 - [ ] `/dragon setup begin`, save, preview, and validation work
@@ -75,7 +75,7 @@
 
 - [ ] `mvn clean package` succeeds
 - [ ] Every automated test passes
-- [ ] JAR metadata reports DragonAltar 1.4.16, API 1.21, and the correct main class
+- [ ] JAR metadata reports DragonAltar 1.4.17, API 1.21, and the correct main class
 - [ ] JAR contains only plugin classes and required resources
 - [ ] Paper, WorldEdit, PlaceholderAPI, and ScaledEnderDragon classes are not bundled
 - [ ] SHA-256 checksum recorded and matches the delivered JAR

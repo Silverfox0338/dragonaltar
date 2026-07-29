@@ -66,6 +66,31 @@ final class SoulHistoryEntryTest {
     }
 
     @Test
+    void parsesPrivateCustodyParticipants() {
+        UUID oldHolder = UUID.randomUUID();
+        UUID adminHolder = UUID.randomUUID();
+        UUID actingAdmin = UUID.randomUUID();
+        SoulHistoryEntry entry = SoulHistoryEntry.parse(
+                "2026-07-29T05:14:00Z|" + oldHolder + "|" + adminHolder
+                        + "|ADMIN_TRANSFER;admin=" + actingAdmin + ";hidden=" + adminHolder);
+
+        assertNotNull(entry);
+        assertEquals(java.util.List.of(adminHolder), entry.privatePlayers());
+    }
+
+    @Test
+    void olderEntriesHideAnAdminWhoWasAlsoTheHolder() {
+        UUID player = UUID.randomUUID();
+        UUID adminHolder = UUID.randomUUID();
+        SoulHistoryEntry entry = SoulHistoryEntry.parse(
+                "2026-07-29T05:14:00Z|" + player + "|" + adminHolder
+                        + "|ADMIN_TRANSFER;admin=" + adminHolder);
+
+        assertNotNull(entry);
+        assertEquals(java.util.List.of(adminHolder), entry.privatePlayers());
+    }
+
+    @Test
     void ignoresMalformedHistorySafely() {
         assertNull(SoulHistoryEntry.parse("not-a-history-entry"));
         assertNull(SoulHistoryEntry.parse(null));

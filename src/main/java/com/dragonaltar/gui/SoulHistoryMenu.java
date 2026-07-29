@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -70,10 +71,11 @@ public final class SoulHistoryMenu implements Listener {
         Inventory inventory = Bukkit.createInventory(holder, 54,
                 Component.text(SoulIdentity.displayName(soulId) + " History", NamedTextColor.DARK_PURPLE));
         holder.inventory = inventory;
+        Set<UUID> privatePlayers = privatePlayers(soul);
         if (events.isEmpty()) inventory.setItem(22, item(Material.WRITABLE_BOOK, "No Events Yet", NamedTextColor.GRAY,
                 List.of(line("This soul has not begun its journey.", NamedTextColor.DARK_GRAY))));
         for (int index = page * PAGE_SIZE; index < Math.min(events.size(), (page + 1) * PAGE_SIZE); index++)
-            inventory.setItem(index - page * PAGE_SIZE, eventItem(events.get(index), index + 1));
+            inventory.setItem(index - page * PAGE_SIZE, eventItem(events.get(index), index + 1, privatePlayers));
         fillRange(inventory, 45, 54, Material.BLACK_STAINED_GLASS_PANE);
         inventory.setItem(45, item(Material.ARROW, "All Souls", NamedTextColor.YELLOW,
                 List.of(line("Return to the soul overview.", NamedTextColor.GRAY))));
@@ -88,11 +90,15 @@ public final class SoulHistoryMenu implements Listener {
 
     private ItemStack soulItem(DragonSoul soul) {
         SoulIdentity identity = SoulIdentity.fromId(soul.id());
+        Set<UUID> privatePlayers = privatePlayers(soul);
+        UUID publicHolder = privatePlayers.contains(soul.holder()) ? null : soul.holder();
+        String publicState = publicHolder == null && soul.holder() != null ? "Dormant" : displayState(soul.state());
         List<Component> lore = new ArrayList<>();
-        lore.add(label("Status", displayState(soul.state()), stateColor(soul.state())));
-        if (displayState(soul.state()).equals("Dormant"))
+        lore.add(label("Status", publicState, publicHolder == null && soul.holder() != null
+                ? NamedTextColor.GRAY : stateColor(soul.state())));
+        if (publicState.equals("Dormant"))
             lore.add(line("  " + dormantDetail(soul.state()), NamedTextColor.DARK_GRAY));
-        lore.add(label("Current holder", playerName(soul.holder()), NamedTextColor.WHITE));
+        lore.add(label("Current holder", playerName(publicHolder), NamedTextColor.WHITE));
         if (soul.state() == DragonSoulState.MOTHER_SOUL_LIMBO) {
             plugin.consequences().limboReleaseAt(soul.id()).ifPresent(release -> {
                 lore.add(label("Entered limbo", latestTime(soul), NamedTextColor.LIGHT_PURPLE));
@@ -102,7 +108,7 @@ public final class SoulHistoryMenu implements Listener {
                 if (release.isAfter(Instant.now())) lore.add(line("  " + relative(release), NamedTextColor.GRAY));
             });
         }
-        List<String> previous = previousHolders(soul);
+        List<String> previous = previousHolders(soul, privatePlayers);
         lore.add(Component.empty());
         lore.add(line("Previous holders", NamedTextColor.GRAY));
         if (previous.isEmpty()) lore.add(line("  None yet", NamedTextColor.DARK_GRAY));
@@ -119,20 +125,23 @@ public final class SoulHistoryMenu implements Listener {
         return item(material(identity), identity.displayName(), soulColor(identity), lore);
     }
 
-    private ItemStack eventItem(SoulHistoryEntry event, int number) {
+    private ItemStack eventItem(SoulHistoryEntry event, int number, Set<UUID> privatePlayers) {
         List<Component> lore = new ArrayList<>();
         lore.add(line(event.description(), NamedTextColor.GRAY));
         lore.add(Component.empty());
-        if (event.fromPlayer() != null) lore.add(label("Previous holder", playerName(event.fromPlayer()), NamedTextColor.WHITE));
-        if (event.toPlayer() != null) {
+        if (event.fromPlayer() != null && !privatePlayers.contains(event.fromPlayer()))
+            lore.add(label("Previous holder", playerName(event.fromPlayer()), NamedTextColor.WHITE));
+        if (event.toPlayer() != null && !privatePlayers.contains(event.toPlayer())) {
             String role = event.transferType().equals("PvP") || event.transferType().equals("Fractured claim")
                     ? "Killer / new holder" : "New holder";
             lore.add(label(role, playerName(event.toPlayer()), NamedTextColor.WHITE));
         }
-        if (!event.callers().isEmpty())
-            lore.add(label(event.callers().size() == 1 ? "Caller" : "Callers",
-                    String.join(", ", event.callers().stream().map(this::playerName).toList()), NamedTextColor.LIGHT_PURPLE));
-        if (event.killer() != null && !event.killer().equals(event.toPlayer()))
+        List<UUID> publicCallers = event.callers().stream().filter(id -> !privatePlayers.contains(id)).toList();
+        if (!publicCallers.isEmpty())
+            lore.add(label(publicCallers.size() == 1 ? "Caller" : "Callers",
+                    String.join(", ", publicCallers.stream().map(this::playerName).toList()), NamedTextColor.LIGHT_PURPLE));
+        if (event.killer() != null && !event.killer().equals(event.toPlayer())
+                && !privatePlayers.contains(event.killer()))
             lore.add(label("Killer", playerName(event.killer()), NamedTextColor.RED));
         lore.add(label("When", DATE.format(event.timestamp()), NamedTextColor.AQUA));
         lore.add(line(relative(event.timestamp()), NamedTextColor.DARK_GRAY));
@@ -140,9 +149,12 @@ public final class SoulHistoryMenu implements Listener {
     }
 
     private ItemStack timelineSummary(DragonSoul soul, int page, int pages, int events) {
+        Set<UUID> privatePlayers = privatePlayers(soul);
+        UUID publicHolder = privatePlayers.contains(soul.holder()) ? null : soul.holder();
         List<Component> lore = new ArrayList<>();
-        lore.add(label("Status", displayState(soul.state()), stateColor(soul.state())));
-        lore.add(label("Holder", playerName(soul.holder()), NamedTextColor.WHITE));
+        lore.add(label("Status", publicHolder == null && soul.holder() != null ? "Dormant" : displayState(soul.state()),
+                publicHolder == null && soul.holder() != null ? NamedTextColor.GRAY : stateColor(soul.state())));
+        lore.add(label("Holder", playerName(publicHolder), NamedTextColor.WHITE));
         lore.add(label("Recorded events", Integer.toString(events), NamedTextColor.AQUA));
         lore.add(label("Page", (page + 1) + " / " + pages, NamedTextColor.GRAY));
         if (soul.state() == DragonSoulState.MOTHER_SOUL_LIMBO)
@@ -198,14 +210,39 @@ public final class SoulHistoryMenu implements Listener {
         return entries(soul).stream().findFirst();
     }
 
-    private List<String> previousHolders(DragonSoul soul) {
+    private List<String> previousHolders(DragonSoul soul, Set<UUID> privatePlayers) {
         Set<UUID> holders = new LinkedHashSet<>();
         List<SoulHistoryEntry> chronological = entries(soul);
         for (SoulHistoryEntry event : chronological) {
-            if (event.fromPlayer() != null && !event.fromPlayer().equals(soul.holder())) holders.add(event.fromPlayer());
-            if (event.toPlayer() != null && !event.toPlayer().equals(soul.holder())) holders.add(event.toPlayer());
+            if (event.fromPlayer() != null && !event.fromPlayer().equals(soul.holder())
+                    && !privatePlayers.contains(event.fromPlayer())) holders.add(event.fromPlayer());
+            if (event.toPlayer() != null && !event.toPlayer().equals(soul.holder())
+                    && !privatePlayers.contains(event.toPlayer())) holders.add(event.toPlayer());
         }
         return holders.stream().map(this::playerName).toList();
+    }
+
+    private Set<UUID> privatePlayers(DragonSoul soul) {
+        Set<UUID> hidden = new LinkedHashSet<>();
+        for (SoulHistoryEntry event : entries(soul)) {
+            hidden.addAll(event.privatePlayers());
+            List<UUID> participants = new ArrayList<>();
+            participants.add(event.fromPlayer());
+            participants.add(event.toPlayer());
+            participants.add(event.killer());
+            participants.addAll(event.callers());
+            participants.stream().filter(Objects::nonNull).filter(this::isAdministrator).forEach(hidden::add);
+        }
+        if (soul.holder() != null && isAdministrator(soul.holder())) hidden.add(soul.holder());
+        return hidden;
+    }
+
+    private boolean isAdministrator(UUID id) {
+        Player online = Bukkit.getPlayer(id);
+        if (online != null && (online.hasPermission("dragonaltar.admin")
+                || online.hasPermission("dragonaltar.admin.souls")
+                || online.hasPermission("dragonaltar.developer"))) return true;
+        return Bukkit.getOfflinePlayer(id).isOp();
     }
 
     private String latestTime(DragonSoul soul) {
