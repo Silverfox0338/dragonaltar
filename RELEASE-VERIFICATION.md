@@ -1,28 +1,28 @@
 # Release Verification
 
-Release version: 1.0.0
+Release version: 1.4.16
 
-Artifact: `target/DragonAltar-1.0.0.jar`
+Artifact: `target/DragonAltar-1.4.16.jar`
 
-Artifact size: 398,859 bytes, 389.51 KiB
+Artifact size: 465,349 bytes, 454.44 KiB
 
-SHA-256: `1ccc05eea4775a0f1322a3bb4cc1fc98add84d24c7e61e458cb8e40ce783addd`
+SHA-256: `99bb8f35c7fbe46f2bd03d1153f83572b9313d2d050fc8e0f29c1a4c52d40ff3`
 
-Checksum file: `target/DragonAltar-1.0.0.jar.sha256`
+Checksum file: `target/DragonAltar-1.4.16.jar.sha256`
 
 ## Automated verification
 
 - `mvn clean package`: passed
-- Test suites: 19
-- Tests: 61
+- Test suites: 28
+- Tests: 81
 - Failures: 0
 - Errors: 0
 - Skipped: 0
 - Main compiler warnings: 0
 - Test compiler warnings: 0
 - Compiled Java class version: 65, Java 21, through Maven `release`
-- Reproducibility: two clean builds produced the same SHA-256
-- JAR entries: 178
+- Reproducibility: deterministic archive timestamps remain configured; repeat-build hash comparison was not rerun for this workspace build
+- JAR entries: 215
 - JAR namespaces: plugin classes only under `com/dragonaltar`
 - Bundled resources: `abilities.yml`, `altar.yml`, `animations.yml`, `config.yml`, `messages.yml`, `plugin.yml`, and `ritual.yml`
 - Bundled Paper, WorldEdit, PlaceholderAPI, ScaledEnderDragon, or JUnit classes: none
@@ -41,7 +41,7 @@ The local Maven runtime was JDK 25.0.3 and compiled with `--release 21`. The gen
 - Command: `/dragon`
 - Alias: `/dragonaltar`
 - Optional dependencies: PlaceholderAPI, WorldEdit, ScaledEnderDragon
-- Maven release version and filtered `plugin.yml` version: 1.0.0
+- Maven release version and filtered `plugin.yml` version: 1.4.16
 
 ## Remaining manual and legal gates
 

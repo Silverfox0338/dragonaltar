@@ -6,6 +6,10 @@ The primary command is `/dragon`; `/dragonaltar` is an alias.
 
 `status`, `history [player]`, `abilities`, `focus`, `settings`, `settings effects <full|reduced|minimal>`, `settings hud <on|off>`, `settings selector <locked|sneak-scroll>`, `settings slowfall <on|off>`, and `help`.
 
+For players, `/dragon history` opens the Dragon Soul archive: a live overview of all three souls with holder, previous-holder, status, latest-event, and limbo-return information. Clicking a soul opens its paginated event timeline. `/dragon history <player>` and console `/dragon history` retain compact chat output for quick checks.
+
+High-risk ownership shortcuts are `/dragon soul force-remove <player> <Akuma|Rev|Lamari>` and `/dragon soul force-transfer <Akuma|Rev|Lamari> <from> <to>`. Both verify the named player currently holds the named soul before issuing a confirmation preview.
+
 `/dragon settings` opens the accessibility menu. `/dragon help` opens the player help menu. Staff can run `/dragon admin repair <player>` to reapply passives, restore a missing Focus, clear stale ability caches, and refill energy.
 
 ## Setup and operations
@@ -27,6 +31,8 @@ The primary command is `/dragon`; `/dragonaltar` is an alias.
 
 The `/dragon dev` tree contains isolated direct/vanilla test dragons, animation previews, soul repair, eligibility explanation, input simulation, data backup/restore, performance inspection, and reset branches. Test dragons carry PDC tags and cannot awaken the official altar unless an administrator explicitly confirms `promote-test-dragon`. Production mode blocks developer mutations unless `safety.allow-destructive-commands-in-production` is explicitly enabled.
 
-Destructive operations issue sender-bound, operation-bound, argument-bound, expiring, single-use tokens. Confirm with `/dragon confirm <token>`; `/dragon dev confirm <token>` remains accepted for developer workflows.
+Destructive operations issue sender-bound, operation-bound, argument-bound, expiring, single-use tokens. Before issuing the token, DragonAltar shows affected players and souls, the resulting state, cooldown/history impact, and whether the action is reversible. Confirm with `/dragon confirm <token>`, or safely discard the pending action with `/dragon cancel`; `/dragon dev confirm <token>` remains accepted for developer workflows. Issuance, cancellation, rejection, confirmation, the confirming administrator, and execution failures are written to the audit log.
+
+Administrative soul mutations retain the confirming administrator UUID in private lineage metadata and the audit log. Player-facing soul history deliberately uses neutral descriptions such as “Passed to a new holder” or “Entered dormancy”; it never exposes that an administrator caused the event or names the administrator.
 
 Commands displayed here describe the command contract. Vanilla respawn recognition, ScaledEnderDragon timing, and entity animation behavior still require the live-server checklist before production.

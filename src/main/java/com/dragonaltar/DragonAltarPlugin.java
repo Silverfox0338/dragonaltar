@@ -27,6 +27,7 @@ import com.dragonaltar.gui.AbilityMenu;
 import com.dragonaltar.gui.RitualMenu;
 import com.dragonaltar.gui.SettingsMenu;
 import com.dragonaltar.gui.HelpMenu;
+import com.dragonaltar.gui.SoulHistoryMenu;
 import com.dragonaltar.soul.DragonSoulService;
 import com.dragonaltar.soul.SoulIdentity;
 import net.kyori.adventure.text.Component;
@@ -47,7 +48,7 @@ public final class DragonAltarPlugin extends JavaPlugin {
     private ConfigService configs; private ConfigValidator validator; private MessageService messages; private YamlDataStore store; private AuditService audit; private DragonSoulService souls;
     private DragonbornService dragonborn; private AbilityService abilities; private AnimationService animations; private EligibilityService eligibility; private PlayerDataService players; private CombatTagService combatTags;
     private ScaledEnderDragonIntegration scaledDragon;
-    private DragonEventManager dragonEvent; private RitualManager rituals; private SoulConsequenceService consequences; private com.dragonaltar.ritual.DragonbornRemovalRitual removalRitual; private DisplayManager displays; private AltarSetupService setup; private AdminGui adminGui; private AbilityMenu abilityMenu;private RitualMenu ritualMenu;private SettingsMenu settingsMenu;private HelpMenu helpMenu; private ConfirmationService confirmations; private final Set<UUID> bypass = new HashSet<>();private boolean runtimeTasksStarted;
+    private DragonEventManager dragonEvent; private RitualManager rituals; private SoulConsequenceService consequences; private com.dragonaltar.ritual.DragonbornRemovalRitual removalRitual; private DisplayManager displays; private AltarSetupService setup; private AdminGui adminGui; private AbilityMenu abilityMenu;private RitualMenu ritualMenu;private SettingsMenu settingsMenu;private HelpMenu helpMenu;private SoulHistoryMenu soulHistoryMenu; private ConfirmationService confirmations; private final Set<UUID> bypass = new HashSet<>();private boolean runtimeTasksStarted;
     @Override public void onEnable() {
         try {
             configs=new ConfigService(this); configs.load();validator=new ConfigValidator(configs);messages=new MessageService(configs); store=new YamlDataStore(this); store.initialize(); audit=new AuditService(this);
@@ -64,7 +65,7 @@ public final class DragonAltarPlugin extends JavaPlugin {
             adminGui=new AdminGui(this);
             abilityMenu=new AbilityMenu(this,abilities);
             ritualMenu=new RitualMenu(this);
-            settingsMenu=new SettingsMenu(this);helpMenu=new HelpMenu();
+            settingsMenu=new SettingsMenu(this);helpMenu=new HelpMenu();soulHistoryMenu=new SoulHistoryMenu(this);
             DragonCommand command=new DragonCommand(this); Objects.requireNonNull(getCommand("dragon")).setExecutor(command); getCommand("dragon").setTabCompleter(command);
             getServer().getPluginManager().registerEvents(new GameplayListener(this,dragonEvent,souls,dragonborn,abilities,eligibility,combatTags),this);
             getServer().getPluginManager().registerEvents(new ProtectionManager(this),this);
@@ -75,6 +76,7 @@ public final class DragonAltarPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(consequences,this);
             getServer().getPluginManager().registerEvents(settingsMenu,this);
             getServer().getPluginManager().registerEvents(helpMenu,this);
+            getServer().getPluginManager().registerEvents(soulHistoryMenu,this);
             getServer().getServicesManager().register(DragonAltarApi.class,new DragonAltarApiImpl(this),this,org.bukkit.plugin.ServicePriority.Normal);
             if(getServer().getPluginManager().isPluginEnabled("PlaceholderAPI"))new PlaceholderApiIntegration(this).register();
             if(validateSetup().equals("Valid")||souls.all().stream().anyMatch(s->s.holder()!=null))ensureRuntimeTasks();integrations().forEach(x->getLogger().info(x+" detected."));
@@ -128,6 +130,7 @@ public final class DragonAltarPlugin extends JavaPlugin {
     public RitualMenu ritualMenu(){return ritualMenu;}
     public SettingsMenu settingsMenu(){return settingsMenu;}
     public HelpMenu helpMenu(){return helpMenu;}
+    public SoulHistoryMenu soulHistoryMenu(){return soulHistoryMenu;}
     public Set<String> integrations(){Set<String>s=new LinkedHashSet<>();for(String n:List.of("ScaledEnderDragon","PlaceholderAPI","WorldEdit"))if(getServer().getPluginManager().isPluginEnabled(n))s.add(n);return s;}
     public Location configuredLocation(String file,String path){
         ConfigurationSection s=configs.file(file).getConfigurationSection(path);if(s==null)return null;World w=null;String uuid=s.getString("world-uuid");

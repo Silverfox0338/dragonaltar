@@ -84,9 +84,10 @@ public final class GameplayListener implements Listener {
         } else if(killer!=null&&dragonborn.isDragonborn(killer.getUniqueId())){
             String policy=plugin.getConfig().getString("transfer.dragonborn-killer-policy","RANDOM_ELIGIBLE");
             dragonborn.remove(victim);
-            if("OPEN_RITUAL_SLOT".equalsIgnoreCase(policy)){souls.unclaimed(soul.id(),"DRAGONBORN_KILLER");plugin.dragonEvent().setAltarState(com.dragonaltar.altar.AltarState.ACTIVE);plugin.displays().resetPreview();}
-            else if("SOUL_DORMANT".equalsIgnoreCase(policy))souls.disable(soul.id(),"DRAGONBORN_KILLER_DORMANT");
-            else {souls.pending(soul.id(),"DRAGONBORN_KILLER_"+policy);if("RANDOM_ELIGIBLE".equalsIgnoreCase(policy))scheduleReincarnation(soul);}
+            String killerContext=";killer="+killer.getUniqueId();
+            if("OPEN_RITUAL_SLOT".equalsIgnoreCase(policy)){souls.unclaimed(soul.id(),"DRAGONBORN_KILLER"+killerContext);plugin.dragonEvent().setAltarState(com.dragonaltar.altar.AltarState.ACTIVE);plugin.displays().resetPreview();}
+            else if("SOUL_DORMANT".equalsIgnoreCase(policy))souls.disable(soul.id(),"DRAGONBORN_KILLER_DORMANT"+killerContext);
+            else {souls.pending(soul.id(),"DRAGONBORN_KILLER_"+policy+killerContext);if("RANDOM_ELIGIBLE".equalsIgnoreCase(policy))scheduleReincarnation(soul);}
         } else {
             souls.pending(soul.id(), "NATURAL_DEATH"); dragonborn.remove(victim);plugin.animations().play("soul-depart",victim.getLocation(),victim);scheduleReincarnation(soul);
         }

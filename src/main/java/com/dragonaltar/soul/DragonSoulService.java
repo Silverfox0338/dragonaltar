@@ -94,7 +94,11 @@ public final class DragonSoulService {
     public synchronized void delete(String id){DragonSoul removed=souls.remove(id);if(removed==null)throw new IllegalArgumentException("Unknown soul");persist();audit.record("SOUL_DELETED","ADMIN",id);if(removed.holder()!=null)Bukkit.getPluginManager().callEvent(new DragonbornLoseEvent(removed.holder(),id));}
     public synchronized void reset(){List<DragonSoul> previous=List.copyOf(souls.values());souls.clear();persist();audit.record("SOULS_RESET","ADMIN","All souls removed");for(DragonSoul soul:previous)if(soul.holder()!=null)Bukkit.getPluginManager().callEvent(new DragonbornLoseEvent(soul.holder(),soul.id()));}
     public synchronized void setState(String id,DragonSoulState state){
-        switch(state){case UNCLAIMED->unclaimed(id,"DEV_SETSTATE");case TRANSFER_PENDING->pending(id,"DEV_SETSTATE");case FRACTURED->fractured(id,"DEV_SETSTATE");case MOTHER_SOUL_LIMBO->limbo(id,"DEV_SETSTATE");case DISABLED->{require(id).disable("DEV_SETSTATE");persist();}case UNCREATED->delete(id);default->throw new IllegalArgumentException("Use reserve/assign commands for "+state);}
+        setState(id,state,"");
+    }
+    public synchronized void setState(String id,DragonSoulState state,String metadata){
+        String reason="DEV_SETSTATE"+(metadata==null?"":metadata);
+        switch(state){case UNCLAIMED->unclaimed(id,reason);case TRANSFER_PENDING->pending(id,reason);case FRACTURED->fractured(id,reason);case MOTHER_SOUL_LIMBO->limbo(id,reason);case DISABLED->{require(id).disable(reason);persist();}case UNCREATED->delete(id);default->throw new IllegalArgumentException("Use reserve/assign commands for "+state);}
     }
     public synchronized void disable(String id,String reason){DragonSoul soul=require(id);UUID old=soul.holder();soul.disable(reason);persist();audit.record("SOUL_DISABLED","SYSTEM",id+" "+reason);if(old!=null)Bukkit.getPluginManager().callEvent(new DragonbornLoseEvent(old,id));}
     public synchronized void clearHistory(){souls.values().forEach(DragonSoul::clearLineage);persist();audit.record("HISTORY_RESET","ADMIN","Soul lineage cleared");}

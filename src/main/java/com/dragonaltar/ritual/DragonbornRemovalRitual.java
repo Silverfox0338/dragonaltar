@@ -255,7 +255,7 @@ public final class DragonbornRemovalRitual implements Listener {
             applyCallerWeakness(ritualists);
             plugin.consequences().sendToLimbo(soulsToLimbo,
                     Duration.ofHours(Math.max(1, plugin.getConfig().getLong("forced-removal-ritual.backfire-limbo-hours", 12))),
-                    "DRAGONBORN_CALLER_BACKFIRE");
+                    withCallers("DRAGONBORN_CALLER_BACKFIRE", ritualists));
             for (DragonSoul strippedSoul : soulsToLimbo) {
                 Player oldHolder = formerHolders.get(strippedSoul.id());
                 if (oldHolder != null) {
@@ -280,7 +280,7 @@ public final class DragonbornRemovalRitual implements Listener {
             applyCallerWeakness(ritualists);
             Player oldHolder = Bukkit.getPlayer(targetId);
             plugin.consequences().manifest(soul.id(), oldHolder == null ? session.chestLocation() : oldHolder.getLocation(),
-                    "FORCED_REMOVAL_RITUAL_INSTABILITY");
+                    withCallers("FORCED_REMOVAL_RITUAL_INSTABILITY", ritualists));
             if (oldHolder != null) plugin.dragonborn().remove(oldHolder);
             plugin.animations().play("soul-depart", oldHolder == null ? session.chestLocation() : oldHolder.getLocation(), oldHolder);
             plugin.audit().record("FORCED_REMOVAL_FRACTURE", leader.getUniqueId().toString(), soul.id());
@@ -297,7 +297,7 @@ public final class DragonbornRemovalRitual implements Listener {
         }
         Player recipient = candidates.get(ThreadLocalRandom.current().nextInt(candidates.size()));
         try {
-            plugin.souls().assign(soul.id(), recipient.getUniqueId(), "FORCED_REMOVAL_RITUAL");
+            plugin.souls().assign(soul.id(), recipient.getUniqueId(), withCallers("FORCED_REMOVAL_RITUAL", ritualists));
         } catch (RuntimeException ex) {
             chest.getInventory().setContents(before);
             fail(leader, "The soul transfer was prevented; the offerings were restored.");
@@ -316,6 +316,12 @@ public final class DragonbornRemovalRitual implements Listener {
                 soul.id() + " " + targetId + " -> " + recipient.getUniqueId());
         Bukkit.broadcast(plugin.messages().component("removal-ritual-cleansing-complete",
                 "target", playerName(targetId), "recipient", recipient.getName(), "soul", SoulIdentity.displayName(soul.id())));
+    }
+
+    private static String withCallers(String reason, Collection<Player> callers) {
+        return reason + ";callers=" + callers.stream()
+                .map(player -> player.getUniqueId().toString())
+                .collect(java.util.stream.Collectors.joining(","));
     }
 
     @EventHandler

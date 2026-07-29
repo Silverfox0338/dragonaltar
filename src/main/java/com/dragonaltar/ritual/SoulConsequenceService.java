@@ -28,6 +28,7 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -121,6 +122,16 @@ public final class SoulConsequenceService implements Listener {
     }
 
     public long ritualCasts() { return ritualCasts; }
+
+    public Optional<Instant> limboReleaseAt(String soulId) {
+        LimboRecord record = limbo.get(soulId);
+        return record == null ? Optional.empty() : Optional.of(Instant.ofEpochMilli(record.releaseAt()));
+    }
+
+    public Optional<UUID> limboFormerHolder(String soulId) {
+        LimboRecord record = limbo.get(soulId);
+        return record == null ? Optional.empty() : Optional.ofNullable(record.formerHolder());
+    }
 
     public boolean shouldFracture() {
         long threshold = plugin.getConfig().getLong("instability.threshold", 6);

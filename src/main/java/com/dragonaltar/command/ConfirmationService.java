@@ -20,5 +20,6 @@ public final class ConfirmationService {
         return c != null && Instant.now().isBefore(c.expires()) && c.token().equalsIgnoreCase(token)
                 && c.operation().equals(operation) && c.arguments().equals(arguments);
     }
+    public synchronized boolean cancel(UUID sender) { return pending.remove(sender) != null; }
     private record Confirmation(String token, String operation, List<String> arguments, Instant expires) {}
 }

@@ -21,4 +21,11 @@ class ConfirmationServiceTest {
         String token=service.issue(sender,"x",List.of(),Duration.ofMillis(1));Thread.sleep(5);
         assertFalse(service.consume(sender,token,"x",List.of()));
     }
+    @Test void cancellationInvalidatesPendingToken() {
+        ConfirmationService service=new ConfirmationService();UUID sender=UUID.randomUUID();
+        String token=service.issue(sender,"reset",List.of("everything"),Duration.ofSeconds(30));
+        assertTrue(service.cancel(sender));
+        assertFalse(service.cancel(sender));
+        assertFalse(service.consume(sender,token,"reset",List.of("everything")));
+    }
 }

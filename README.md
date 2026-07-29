@@ -2,7 +2,7 @@
 
 DragonAltar is a Paper plugin for an SMP-wide Ancient Dragon storyline. It runs a protected vanilla Ender Dragon respawn ritual, awakens a configured altar, creates exactly three persistent Dragon Souls, and keeps Akuma, Rev, and Lamari circulating through rituals, inheritance, recovery, and reincarnation.
 
-DragonAltar 1.0.0 targets Paper 1.21.4 and Java 21.
+DragonAltar 1.4.16 targets Paper 1.21.4 and Java 21.
 
 ## Highlights
 
@@ -40,7 +40,7 @@ Paper and optional plugin APIs are provided dependencies and are not bundled in 
 ## Installation
 
 1. Stop the Paper server.
-2. Copy `DragonAltar-1.0.0.jar` into the server's `plugins` directory.
+2. Copy `DragonAltar-1.4.16.jar` into the server's `plugins` directory.
 3. Start the server once to create configuration and data directories.
 4. Review `plugins/DragonAltar/config.yml` and the other generated YAML files.
 5. Run `/dragon setup begin` and record the altar, interaction, ritual, arrival, fountain, and crystal locations.
@@ -117,7 +117,7 @@ See [API.md](API.md) for the Bukkit service and events.
 mvn clean package
 ```
 
-The release JAR is written to `target/DragonAltar-1.0.0.jar`. Maven compiles with `--release 21`, runs the JUnit suite, filters only `plugin.yml`, and produces deterministic archive timestamps.
+The release JAR is written to `target/DragonAltar-1.4.16.jar`. Maven compiles with `--release 21`, runs the JUnit suite, filters only `plugin.yml`, and produces deterministic archive timestamps.
 
 ## Data and privacy
 

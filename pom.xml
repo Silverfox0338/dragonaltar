@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.dragonaltar</groupId>
   <artifactId>dragonaltar</artifactId>
-  <version>1.0.0</version>
+  <version>1.4.16</version>
   <name>DragonAltar</name>
   <description>Persistent Dragonborn souls, rituals, abilities, and an Ancient Dragon storyline for Paper.</description>
   <properties>
