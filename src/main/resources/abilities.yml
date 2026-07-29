@@ -16,6 +16,14 @@ focus:
   name: '<light_purple>Dragon Focus'
   soulbound: true
   non-droppable: true
+  blocked-command-prefixes:
+    - 'ah sell'
+    - 'auction sell'
+    - 'auctionhouse sell'
+    - 'market sell'
+    - 'sell'
+  blocked-inventory-command-prefixes:
+    - 'sellall'
 passives:
   # additional-hearts is measured in hearts, not health points.
   additional-hearts: 2

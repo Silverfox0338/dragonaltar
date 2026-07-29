@@ -4,6 +4,7 @@ import com.dragonaltar.ability.*;
 import com.dragonaltar.DragonAltarPlugin;
 import com.dragonaltar.dragonborn.DragonbornService;
 import com.dragonaltar.dragonborn.CombatTagService;
+import com.dragonaltar.dragonborn.FocusProtectionRules;
 import com.dragonaltar.player.SelectorMode;
 import com.dragonaltar.api.event.DragonbornGainEvent;
 import com.dragonaltar.api.event.DragonbornLoseEvent;
@@ -17,6 +18,8 @@ import org.bukkit.event.*;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.event.server.ServerCommandEvent;
 import org.bukkit.inventory.ItemStack;
@@ -41,6 +44,20 @@ public final class GameplayListener implements Listener {
     @EventHandler(ignoreCancelled=true,priority=EventPriority.HIGHEST) public void protectCrystalExplosion(EntityExplodeEvent e){if(e.getEntity() instanceof EnderCrystal crystal&&event.isEventCrystal(crystal))e.setCancelled(true);}
     @EventHandler(priority=EventPriority.MONITOR) public void death(EntityDeathEvent e) { if (e.getEntity() instanceof EnderDragon d) event.defeated(d,plugin.scaledDragon().completionMethod()); }
     @EventHandler(priority=EventPriority.MONITOR,ignoreCancelled=true) public void playerCommand(PlayerCommandPreprocessEvent e){plugin.scaledDragon().observeCommand(e.getMessage());}
+    @EventHandler(priority=EventPriority.LOWEST) public void protectFocusCommand(PlayerCommandPreprocessEvent e){
+        Player player=e.getPlayer();
+        List<String> blocked=plugin.configService().file("abilities.yml").getStringList("focus.blocked-command-prefixes");
+        List<String> bulkBlocked=plugin.configService().file("abilities.yml").getStringList("focus.blocked-inventory-command-prefixes");
+        boolean heldFocus=dragonborn.isFocus(player.getInventory().getItemInMainHand())
+                ||dragonborn.isFocus(player.getInventory().getItemInOffHand())
+                ||dragonborn.isFocus(player.getItemOnCursor());
+        boolean inventoryFocus=heldFocus||Arrays.stream(player.getInventory().getContents()).anyMatch(dragonborn::isFocus);
+        if(!(heldFocus&&FocusProtectionRules.blocksCommand(e.getMessage(),blocked))
+                &&!(inventoryFocus&&FocusProtectionRules.blocksCommand(e.getMessage(),bulkBlocked)))return;
+        e.setCancelled(true);
+        plugin.messages().send(player,"focus-protected");
+        plugin.audit().record("FOCUS_COMMAND_BLOCKED",player.getUniqueId().toString(),e.getMessage());
+    }
     @EventHandler(priority=EventPriority.MONITOR) public void serverCommand(ServerCommandEvent e){plugin.scaledDragon().observeCommand(e.getCommand());}
     @EventHandler public void join(PlayerJoinEvent e) {
         eligibility.markJoined(e.getPlayer());
@@ -109,7 +126,7 @@ public final class GameplayListener implements Listener {
     }
     @EventHandler public void held(PlayerItemHeldEvent e) {
         Player p=e.getPlayer(); if (!dragonborn.isDragonborn(p.getUniqueId())) return;
-        ItemStack old=p.getInventory().getItem(e.getPreviousSlot()); if (!dragonborn.isFocus(old)) return;
+        ItemStack old=p.getInventory().getItem(e.getPreviousSlot()); if (!dragonborn.isUsableFocus(p,old)) return;
         if(plugin.players().settings(p.getUniqueId()).selector()==SelectorMode.SNEAK_SCROLL&&!p.isSneaking())return;
         abilities.cycle(p, e.getNewSlot()>e.getPreviousSlot()?1:-1); e.setCancelled(true);
     }
@@ -117,18 +134,43 @@ public final class GameplayListener implements Listener {
         if(!e.getAction().isRightClick()||e.getHand()!=EquipmentSlot.HAND)return;
         if(!dragonborn.isFocus(e.getItem())){Location interaction=plugin.configuredLocation("altar.yml","interaction");if(e.getAction()==org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK&&e.getClickedBlock()!=null&&interaction!=null&&interaction.getWorld().equals(e.getClickedBlock().getWorld())&&interaction.getBlock().equals(e.getClickedBlock())){e.setCancelled(true);
             var state=plugin.dragonEvent().altarState();if(plugin.dragonEvent().state().ordinal()<com.dragonaltar.dragonevent.DragonEventState.DEFEATED.ordinal()){e.getPlayer().sendMessage("The altar has not yet awakened.");return;}if(state==com.dragonaltar.altar.AltarState.DORMANT||plugin.souls().unclaimedCount()==0){e.getPlayer().sendMessage("The altar is dormant. Its three souls have already chosen their vessels.");return;}if(state!=com.dragonaltar.altar.AltarState.ACTIVE){e.getPlayer().sendMessage("The altar is silent.");return;}if(plugin.dragonborn().isDragonborn(e.getPlayer().getUniqueId())){e.getPlayer().sendMessage("A Dragon Soul already resides within you.");return;}if(plugin.rituals().active().isPresent()){e.getPlayer().sendMessage("The altar is currently bound to another ritual.");return;}plugin.ritualMenu().open(e.getPlayer());}return;}
+        if(!dragonborn.isUsableFocus(e.getPlayer(),e.getItem())){e.setCancelled(true);plugin.messages().send(e.getPlayer(),"focus-protected");dragonborn.ensureFocus(e.getPlayer());return;}
         e.setCancelled(true); AbilityResult result=abilities.cast(e.getPlayer());
         if (!result.success()) {if(result.message().startsWith("ability-"))plugin.messages().send(e.getPlayer(),result.message());else e.getPlayer().sendMessage(result.message());}
     }
     @EventHandler public void drop(PlayerDropItemEvent e) { if (dragonborn.isFocus(e.getItemDrop().getItemStack())) e.setCancelled(true); }
-    @EventHandler(ignoreCancelled=true) public void focusEntity(PlayerInteractEntityEvent e){if(dragonborn.isFocus(e.getPlayer().getInventory().getItemInMainHand())&&(e.getRightClicked() instanceof ItemFrame||e.getRightClicked() instanceof ArmorStand))e.setCancelled(true);}
-    @EventHandler(ignoreCancelled=true) public void inventory(InventoryClickEvent e){
-        if(!(e.getWhoClicked() instanceof Player p))return;boolean focus=dragonborn.isFocus(e.getCurrentItem())||dragonborn.isFocus(e.getCursor())||(e.getHotbarButton()>=0&&dragonborn.isFocus(p.getInventory().getItem(e.getHotbarButton())));
-        if(focus&&(e.isShiftClick()||e.getClickedInventory()!=e.getWhoClicked().getInventory()))e.setCancelled(true);
+    @EventHandler(priority=EventPriority.LOWEST) public void pickup(EntityPickupItemEvent e){
+        if(!dragonborn.isFocus(e.getItem().getItemStack()))return;
+        Optional<UUID> owner=dragonborn.focusOwner(e.getItem().getItemStack());
+        e.setCancelled(true);
+        e.getItem().remove();
+        Player restore=owner.map(Bukkit::getPlayer).orElse(e.getEntity() instanceof Player player?player:null);
+        if(restore!=null)Bukkit.getScheduler().runTask(plugin,()->dragonborn.ensureFocus(restore));
     }
-    @EventHandler(ignoreCancelled=true) public void inventoryDrag(InventoryDragEvent e){if(dragonborn.isFocus(e.getOldCursor())&&e.getRawSlots().stream().anyMatch(slot->slot<e.getView().getTopInventory().getSize()))e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.LOWEST) public void focusSpawn(ItemSpawnEvent e){
+        if(!dragonborn.isFocus(e.getEntity().getItemStack()))return;
+        Player owner=dragonborn.focusOwner(e.getEntity().getItemStack()).map(Bukkit::getPlayer).orElse(null);
+        e.setCancelled(true);
+        if(owner!=null)Bukkit.getScheduler().runTask(plugin,()->dragonborn.ensureFocus(owner));
+    }
+    @EventHandler(ignoreCancelled=true) public void focusEntity(PlayerInteractEntityEvent e){if(dragonborn.isFocus(e.getPlayer().getInventory().getItemInMainHand())&&(e.getRightClicked() instanceof ItemFrame||e.getRightClicked() instanceof ArmorStand))e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.LOWEST) public void inventory(InventoryClickEvent e){
+        if(!(e.getWhoClicked() instanceof Player p))return;boolean focus=dragonborn.isFocus(e.getCurrentItem())||dragonborn.isFocus(e.getCursor())||(e.getHotbarButton()>=0&&dragonborn.isFocus(p.getInventory().getItem(e.getHotbarButton())));
+        boolean duplicates=e.getAction()==org.bukkit.event.inventory.InventoryAction.CLONE_STACK
+                ||e.getAction()==org.bukkit.event.inventory.InventoryAction.COLLECT_TO_CURSOR;
+        if(focus&&(duplicates||e.isShiftClick()||e.getClickedInventory()!=e.getWhoClicked().getInventory())){e.setCancelled(true);plugin.messages().send(p,"focus-protected");}
+    }
+    @EventHandler(priority=EventPriority.LOWEST) public void inventoryDrag(InventoryDragEvent e){if(dragonborn.isFocus(e.getOldCursor())&&e.getRawSlots().stream().anyMatch(slot->slot<e.getView().getTopInventory().getSize()))e.setCancelled(true);}
+    @EventHandler(priority=EventPriority.LOWEST) public void inventoryMove(InventoryMoveItemEvent e){if(dragonborn.isFocus(e.getItem()))e.setCancelled(true);}
+    @EventHandler public void inventoryClose(InventoryCloseEvent e){
+        if(e.getPlayer() instanceof Player player&&dragonborn.isDragonborn(player.getUniqueId()))
+            Bukkit.getScheduler().runTask(plugin,()->dragonborn.ensureFocus(player));
+    }
     @EventHandler public void swap(PlayerSwapHandItemsEvent e){
         if(!dragonborn.isFocus(e.getMainHandItem())&&!dragonborn.isFocus(e.getOffHandItem()))return;e.setCancelled(true);
+        if(!dragonborn.isUsableFocus(e.getPlayer(),e.getMainHandItem())&&!dragonborn.isUsableFocus(e.getPlayer(),e.getOffHandItem())){
+            plugin.messages().send(e.getPlayer(),"focus-protected");dragonborn.ensureFocus(e.getPlayer());return;
+        }
         if(e.getPlayer().isSneaking())plugin.abilityMenu().open(e.getPlayer());else abilities.cycleCategory(e.getPlayer());
     }
 }

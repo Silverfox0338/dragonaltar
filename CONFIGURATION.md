@@ -47,6 +47,8 @@ Keep the destructive override false for normal operation. Operators do not bypas
 
 The default ability configuration keeps Dragon Energy at 100, bounds Rev marks and per-target gains, ignores weak-mob Heat farming, caps Inferno Hunt mobility and Rampage, limits particles, and uses persistent shared ultimate and resonance cooldowns.
 
+`focus.blocked-command-prefixes` blocks held-item sale commands such as `/ah sell`. `focus.blocked-inventory-command-prefixes` blocks bulk commands such as `/sellall` whenever a Focus is present. Focus items are owner-bound, cannot enter external inventories, and duplicate or escaped copies are removed automatically.
+
 ## Migration behavior
 
 On startup DragonAltar:

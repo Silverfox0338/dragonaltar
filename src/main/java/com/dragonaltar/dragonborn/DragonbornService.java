@@ -8,6 +8,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
 import org.bukkit.NamespacedKey;
 import org.bukkit.attribute.*;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -24,6 +25,8 @@ public final class DragonbornService {
     private final ConfigService config;
     private final PlayerDataService players;
     private final NamespacedKey focusKey;
+    private final NamespacedKey focusOwnerKey;
+    private final NamespacedKey focusSoulKey;
     private final NamespacedKey healthKey;
     private final NamespacedKey slowFallingKey;
     private final NamespacedKey frostveilSpeedKey;
@@ -33,6 +36,8 @@ public final class DragonbornService {
     public DragonbornService(JavaPlugin plugin, DragonSoulService souls, ConfigService config, PlayerDataService players) {
         this.plugin = plugin; this.souls = souls; this.config=config; this.players=players;
         focusKey = new NamespacedKey(plugin, "dragon_focus");
+        focusOwnerKey = new NamespacedKey(plugin, "dragon_focus_owner");
+        focusSoulKey = new NamespacedKey(plugin, "dragon_focus_soul");
         healthKey = new NamespacedKey(plugin, "dragonborn_health");
         slowFallingKey = new NamespacedKey(plugin,"dragonborn_slow_falling");
         frostveilSpeedKey = new NamespacedKey(plugin,"frostveil_speed");
@@ -57,23 +62,62 @@ public final class DragonbornService {
         removeSlowFalling(player);
         removeModifier(player, Attribute.MOVEMENT_SPEED, frostveilSpeedKey);
         removeModifier(player, Attribute.ARMOR_TOUGHNESS, stoneheartToughnessKey);
-        for (ItemStack item : player.getInventory().getContents()) if (isFocus(item)) item.setAmount(0);
+        removeFocusItems(player);
     }
-    public void ensureFocus(Player player) {
-        if(!isDragonborn(player.getUniqueId()))return;
-        for (ItemStack item : player.getInventory().getContents()) if (isFocus(item)) { updateFocusIdentity(player,item); return; }
+    public boolean ensureFocus(Player player) {
+        if(!isDragonborn(player.getUniqueId())){removeFocusItems(player);return false;}
+        for(ItemStack item:player.getEnderChest().getContents())if(isFocus(item))item.setAmount(0);
+        ItemStack canonical=null;
+        for(int slot=0;slot<player.getInventory().getSize();slot++){
+            ItemStack item=player.getInventory().getItem(slot);
+            if(!isFocus(item))continue;
+            if(canonical==null&&isOwnedBy(player,item)){
+                canonical=item;
+                if(canonical.getAmount()!=1)canonical.setAmount(1);
+                updateFocusIdentity(player,canonical);
+            }else player.getInventory().setItem(slot,null);
+        }
+        ItemStack cursor=player.getItemOnCursor();
+        if(isFocus(cursor)){
+            if(canonical==null&&isOwnedBy(player,cursor)){
+                canonical=cursor;
+                if(canonical.getAmount()!=1)canonical.setAmount(1);
+                updateFocusIdentity(player,canonical);
+            }else player.setItemOnCursor(null);
+        }
+        if(canonical!=null)return true;
         Material material=Material.matchMaterial(config.file("abilities.yml").getString("focus.material","ECHO_SHARD"));ItemStack focus = new ItemStack(material==null?Material.ECHO_SHARD:material);
         ItemMeta meta = focus.getItemMeta();
         meta.displayName(mini.deserialize(config.file("abilities.yml").getString("focus.name","<light_purple>Dragon Focus")));
         meta.getPersistentDataContainer().set(focusKey, PersistentDataType.BYTE, (byte) 1);
         meta.setEnchantmentGlintOverride(true); focus.setItemMeta(meta);
         updateFocusIdentity(player,focus);
-        player.getInventory().addItem(focus).values().forEach(left->player.getWorld().dropItemNaturally(player.getLocation(),left,item->item.setOwner(player.getUniqueId())));
+        if(!player.getInventory().addItem(focus).isEmpty()){
+            plugin.getLogger().warning("Could not restore Dragon Focus for "+player.getName()+": inventory is full.");
+            return false;
+        }
+        return true;
+    }
+    public int removeEscapedFocusEntities(){
+        int removed=0;
+        for(World world:Bukkit.getWorlds())for(Item item:world.getEntitiesByClass(Item.class))
+            if(isFocus(item.getItemStack())){item.remove();removed++;}
+        return removed;
+    }
+    private void removeFocusItems(Player player){
+        for(ItemStack item:player.getInventory().getContents())if(isFocus(item))item.setAmount(0);
+        for(ItemStack item:player.getEnderChest().getContents())if(isFocus(item))item.setAmount(0);
+        if(isFocus(player.getItemOnCursor()))player.setItemOnCursor(null);
     }
     private void updateFocusIdentity(Player player,ItemStack focus){
         ItemMeta meta=focus.getItemMeta();
-        soul(player).ifPresent(identity -> meta.lore(java.util.List.of(
-                net.kyori.adventure.text.Component.text("Soul: " + identity.displayName(), net.kyori.adventure.text.format.NamedTextColor.GRAY))));
+        meta.getPersistentDataContainer().set(focusOwnerKey,PersistentDataType.STRING,player.getUniqueId().toString());
+        soul(player).ifPresent(identity -> {
+            meta.getPersistentDataContainer().set(focusSoulKey,PersistentDataType.STRING,identity.id());
+            meta.lore(java.util.List.of(
+                    net.kyori.adventure.text.Component.text("Soul: " + identity.displayName(), net.kyori.adventure.text.format.NamedTextColor.GRAY),
+                    net.kyori.adventure.text.Component.text("Soulbound to " + player.getName(), net.kyori.adventure.text.format.NamedTextColor.DARK_GRAY)));
+        });
         focus.setItemMeta(meta);
     }
     private void removeSlowFalling(Player player){
@@ -84,6 +128,18 @@ public final class DragonbornService {
     public boolean isFocus(ItemStack item) {
         return item != null && item.hasItemMeta() &&
                 item.getItemMeta().getPersistentDataContainer().has(focusKey, PersistentDataType.BYTE);
+    }
+    public boolean isUsableFocus(Player player,ItemStack item){
+        return isFocus(item)&&isDragonborn(player.getUniqueId())&&isOwnedBy(player,item);
+    }
+    public Optional<UUID> focusOwner(ItemStack item){
+        if(!isFocus(item))return Optional.empty();
+        String raw=item.getItemMeta().getPersistentDataContainer().get(focusOwnerKey,PersistentDataType.STRING);
+        if(raw==null)return Optional.empty();
+        try{return Optional.of(UUID.fromString(raw));}catch(IllegalArgumentException ignored){return Optional.empty();}
+    }
+    private boolean isOwnedBy(Player player,ItemStack item){
+        return focusOwner(item).filter(player.getUniqueId()::equals).isPresent();
     }
     public Optional<SoulIdentity> soul(Player player) {
         return souls.byHolder(player.getUniqueId()).map(value -> SoulIdentity.fromId(value.id()));

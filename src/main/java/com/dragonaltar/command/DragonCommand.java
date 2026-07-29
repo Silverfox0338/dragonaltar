@@ -29,7 +29,7 @@ public final class DragonCommand implements TabExecutor {
                 case "status" -> { status(sender); yield true; }
                 case "help" -> { help(sender); yield true; }
                 case "abilities" -> { Collection<DragonAbility> list=sender instanceof Player p?plugin.abilities().abilities(p):plugin.abilities().abilities();plugin.messages().send(sender,"abilities-list","abilities",String.join(", ",list.stream().map(DragonAbility::id).toList()));yield true; }
-                case "focus" -> { Player p=player(sender);if(!plugin.dragonborn().isDragonborn(p.getUniqueId()))plugin.messages().send(sender,"focus-unavailable");else{plugin.dragonborn().ensureFocus(p);plugin.messages().send(sender,"focus-restored");}yield true; }
+                case "focus" -> { Player p=player(sender);if(!plugin.dragonborn().isDragonborn(p.getUniqueId()))plugin.messages().send(sender,"focus-unavailable");else if(plugin.dragonborn().ensureFocus(p))plugin.messages().send(sender,"focus-restored");else plugin.messages().send(sender,"focus-inventory-full");yield true; }
                 case "settings" -> { settings(sender,args); yield true; }
                 case "history" -> { history(sender, args); yield true; }
                 case "refunds" -> {Player p=player(sender);plugin.rituals().refundPending(p);p.sendMessage("Pending refund entries: "+plugin.rituals().pendingRefundCount(p.getUniqueId()));yield true;}

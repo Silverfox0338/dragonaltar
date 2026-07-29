@@ -1,9 +1,23 @@
 package com.dragonaltar.ability;
 
+import com.dragonaltar.ability.akuma.AbsoluteZero;
+import com.dragonaltar.ability.akuma.AkumasHush;
+import com.dragonaltar.ability.akuma.AkumasTrail;
+import com.dragonaltar.ability.lamari.LamarisFault;
+import com.dragonaltar.ability.lamari.LamarisReckoning;
+import com.dragonaltar.ability.lamari.TitansBulwark;
+import com.dragonaltar.ability.resonance.DragonTrinity;
+import com.dragonaltar.ability.resonance.GlacialBastion;
+import com.dragonaltar.ability.resonance.ThermalConvergence;
+import com.dragonaltar.ability.resonance.VolcanicAegis;
+import com.dragonaltar.ability.rev.InfernosWrath;
+import com.dragonaltar.ability.rev.RevsRend;
+import com.dragonaltar.ability.rev.WrathOfRev;
+import com.dragonaltar.ability.shared.Roar;
+import com.dragonaltar.ability.shared.Wings;
 import com.dragonaltar.dragonborn.DragonbornService;
 import com.dragonaltar.api.event.DragonAbilityCastEvent;
 import com.dragonaltar.api.event.DragonAbilitySelectEvent;
-import com.dragonaltar.api.event.DragonEnergyChangeEvent;
 import com.dragonaltar.config.ConfigService;
 import com.dragonaltar.player.PlayerDataService;
 import com.dragonaltar.DragonAltarPlugin;
@@ -32,27 +46,20 @@ import java.util.*;
 public final class AbilityService {
     private static final double MAX_TARGET_RADIUS = 64.0;
     private static final int MAX_TARGETS_PER_QUERY = 128;
-    private static final String ULTIMATE_COOLDOWN_KEY = "_shared_ultimate";
-    private static final String RESONANCE_COOLDOWN_KEY = "_shared_resonance";
     private final DragonAltarPlugin plugin;
     private final DragonbornService dragonborn;
     private final ConfigService config;
     private final PlayerDataService players;
     private final Map<String, DragonAbility> registry = new LinkedHashMap<>();
-    private final Map<UUID, Integer> energy = new HashMap<>();
-    private final Map<UUID, String> selected = new HashMap<>();
-    private final Map<UUID, Map<String, Long>> cooldowns = new HashMap<>();
-    private final Map<UUID,Long> regenBlockedUntil=new HashMap<>();
-    private final Map<UUID,String> unlockedResonances=new HashMap<>();
-    private final Set<String> resonanceIds=new HashSet<>();
-    private final Set<UUID> activeBulwarks=new HashSet<>();
-    private final Map<UUID,Double> bulwarkCharge=new HashMap<>();
-    private final Set<Display> activeAbilityDisplays=new HashSet<>();
-    private final Map<UUID,Integer> glacialWardCharges=new HashMap<>();
-    private final Map<UUID,Long> volcanicAegisUntil=new HashMap<>();
-    private final Map<UUID,Long> volcanicRetaliationReady=new HashMap<>();
-    private final Map<UUID,Boolean> temporaryFlightPrevious=new HashMap<>();
-    private final Map<Block,TemporaryTerrain> temporaryTerrain=new HashMap<>();
+    private final AbilityEnergyManager energy;
+    private final AbilitySelectionManager selections;
+    private final AbilityCooldownTracker cooldowns;
+    private final ResonanceState resonances = new ResonanceState();
+    private final AbilityResonanceCoordinator resonanceCoordinator;
+    private final AbilityDisplayTracker displays;
+    private final TemporaryTerrainTracker terrain = new TemporaryTerrainTracker();
+    private final TemporaryFlightManager temporaryFlight = new TemporaryFlightManager();
+    private final BulwarkTracker bulwarks = new BulwarkTracker();
     private final AbilityCombatRules.BrittleTracker brittle=new AbilityCombatRules.BrittleTracker();
     private final AbilityCombatRules.RevHuntTracker revHunt=new AbilityCombatRules.RevHuntTracker();
     private final AbilityCombatRules.ReflectionGuard reflectionGuard=new AbilityCombatRules.ReflectionGuard();
@@ -62,13 +69,19 @@ public final class AbilityService {
 
     public AbilityService(DragonAltarPlugin plugin, DragonbornService dragonborn, ConfigService config, PlayerDataService players) {
         this.plugin = plugin; this.dragonborn = dragonborn; this.config=config; this.players=players;
+        this.energy = new AbilityEnergyManager(config, players);
+        this.selections = new AbilitySelectionManager(players);
+        this.cooldowns = new AbilityCooldownTracker(players);
+        this.displays = new AbilityDisplayTracker(plugin, players);
+        this.resonanceCoordinator = new AbilityResonanceCoordinator(plugin, dragonborn, config, resonances,
+                player -> playAccessibleSound(player.getLocation(),Sound.BLOCK_BEACON_ACTIVATE,.8f,1.35f));
         registerDefaults();
     }
     public void start() {
         if(task!=null&&!task.isCancelled())return;
         long interval=config.file("abilities.yml").getLong("energy.regeneration-interval-ticks",20);
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            refreshResonanceUnlocks();
+            resonanceCoordinator.refreshUnlocks();
             int max = maxEnergy(), baseRegen = config.file("abilities.yml").getInt("energy.regeneration", 2);
             for (Player p : Bukkit.getOnlinePlayers()) if (dragonborn.isDragonborn(p.getUniqueId())) {
                 dragonborn.refreshEnvironmentalPassives(p);
@@ -82,11 +95,11 @@ public final class AbilityService {
                             integerRoot("rev-hunt.heat.decay-amount",2));
                     showRevTracking(p,System.currentTimeMillis());
                 }
-                if(current(p)<max&&regenBlockedUntil.getOrDefault(p.getUniqueId(),0L)<=System.currentTimeMillis())changeEnergy(p,Math.min(max,current(p)+regen),false);
+                if(current(p)<max&&energy.regenerationAllowed(p.getUniqueId(),System.currentTimeMillis()))energy.set(p,Math.min(max,current(p)+regen),false);
                 String selectedId=selected(p);DragonAbility selectedAbility=registry.get(selectedId);
                 long cooldown=effectiveCooldownSeconds(p,selectedAbility);
                 long ultimateCooldown=ultimateCooldownSeconds(p);
-                Optional<DragonResonance> resonance=currentResonance(p);
+                Optional<DragonResonance> resonance=resonanceCoordinator.current(p);
                 long resonanceCooldown=resonance.map(value->effectiveCooldownSeconds(p,registry.get(value.id()))).orElse(0L);
                 String abilityName=selectedAbility==null?selectedId:PlainTextComponentSerializer.plainText().serialize(selectedAbility.displayName());
                 if(players.settings(p.getUniqueId()).hud())p.sendActionBar(plugin.messages().component("energy-hud",
@@ -105,40 +118,28 @@ public final class AbilityService {
     public void stop() {
         if (task != null) task.cancel();
         task=null;
-        revertAllTemporaryTerrain();
-        removeDisplays(new ArrayList<>(activeAbilityDisplays));
-        brittle.clear();revHunt.clear();activeBulwarks.clear();bulwarkCharge.clear();unlockedResonances.clear();
-        glacialWardCharges.clear();volcanicAegisUntil.clear();volcanicRetaliationReady.clear();
-        for(var entry:new ArrayList<>(temporaryFlightPrevious.entrySet())){
-            Player player=Bukkit.getPlayer(entry.getKey());
-            if(player!=null&&player.isOnline()){
-                player.setFlying(false);
-                if(!entry.getValue()&&player.getGameMode()!=GameMode.CREATIVE&&player.getGameMode()!=GameMode.SPECTATOR)
-                    player.setAllowFlight(false);
-            }
-        }
-        temporaryFlightPrevious.clear();
-        for(var entry:new ArrayList<>(energy.entrySet()))players.energy(entry.getKey(),entry.getValue());
-        energy.clear();selected.clear();cooldowns.clear();regenBlockedUntil.clear();
+        terrain.revertAll();
+        displays.removeAll();
+        temporaryFlight.restoreAll();
+        brittle.clear();revHunt.clear();bulwarks.clear();resonances.clear();
+        energy.persistAllAndClear();
+        selections.clear();
+        cooldowns.clear();
     }
     public Collection<DragonAbility> abilities() { return Collections.unmodifiableCollection(registry.values()); }
-    public int current(Player p) { return energy.computeIfAbsent(p.getUniqueId(),id->players.energy(id).orElse(maxEnergy())); }
-    public int maxEnergy() { return config.file("abilities.yml").getInt("energy.maximum",100); }
+    public int current(Player p) { return energy.current(p); }
+    public int maxEnergy() { return energy.maximum(); }
     public void setEnergy(Player p, int value) {
-        changeEnergy(p,value,true);
-    }
-    private void changeEnergy(Player p,int value,boolean persist){
-        int old=current(p), bounded=Math.max(0,Math.min(maxEnergy(),value));DragonEnergyChangeEvent event=new DragonEnergyChangeEvent(p,old,bounded);
-        Bukkit.getPluginManager().callEvent(event);if(!event.isCancelled()){int stored=Math.max(0,Math.min(maxEnergy(),event.newEnergy()));energy.put(p.getUniqueId(),stored);if(persist)players.energy(p.getUniqueId(),stored);}
+        energy.set(p,value,true);
     }
     public Collection<DragonAbility> abilities(Player player) { return available(player); }
     public String selected(Player p) {
-        String value=selected.computeIfAbsent(p.getUniqueId(), k -> players.selection(k,"wings"));
+        String value=selections.selected(p.getUniqueId(),"wings");
         DragonAbility chosen=registry.get(value);
-        if(chosen==null||!supports(p,chosen)){value=available(p).getFirst().id();selected.put(p.getUniqueId(),value);players.setSelection(p.getUniqueId(),value);}
+        if(chosen==null||!supports(p,chosen)){value=available(p).getFirst().id();selections.select(p.getUniqueId(),value);}
         return value;
     }
-    public void select(Player p, String id) { if (available(p).stream().anyMatch(ability->ability.id().equals(id))) {DragonAbilitySelectEvent event=new DragonAbilitySelectEvent(p,id);Bukkit.getPluginManager().callEvent(event);if(!event.isCancelled()){selected.put(p.getUniqueId(),id);players.setSelection(p.getUniqueId(),id);}} }
+    public void select(Player p, String id) { if (available(p).stream().anyMatch(ability->ability.id().equals(id))) {DragonAbilitySelectEvent event=new DragonAbilitySelectEvent(p,id);Bukkit.getPluginManager().callEvent(event);if(!event.isCancelled())selections.select(p.getUniqueId(),id);} }
     public void cycle(Player p, int direction) {
         List<String> ids = available(p).stream().map(DragonAbility::id).toList(); int old = ids.indexOf(selected(p));
         select(p,ids.get(Math.floorMod(old + direction,ids.size())));
@@ -160,11 +161,11 @@ public final class AbilityService {
         if(apiEvent.isCancelled()) return AbilityResult.fail("ability-cancelled");
         if(ability.id().equals("revs-rend")&&revHunt.recastAvailable(p.getUniqueId(),System.currentTimeMillis()))
             return revsRendRecast(p);
-        Map<String,Long> playerCooldowns=cooldowns.computeIfAbsent(p.getUniqueId(), players::cooldowns);
+        Map<String,Long> playerCooldowns=cooldowns.mutable(p.getUniqueId());
         long ready = playerCooldowns.getOrDefault(ability.id(), 0L);
         if (ready > System.currentTimeMillis()) return AbilityResult.fail("ability-cooldown");
-        if(ability.ultimate()&&playerCooldowns.getOrDefault(ULTIMATE_COOLDOWN_KEY,0L)>System.currentTimeMillis())return AbilityResult.fail("ability-ultimate-cooldown");
-        if(resonanceIds.contains(ability.id())&&playerCooldowns.getOrDefault(RESONANCE_COOLDOWN_KEY,0L)>System.currentTimeMillis())return AbilityResult.fail("ability-resonance-cooldown");
+        if(ability.ultimate()&&cooldowns.active(p.getUniqueId(),AbilityCooldownTracker.ULTIMATE_GROUP,System.currentTimeMillis()))return AbilityResult.fail("ability-ultimate-cooldown");
+        if(resonances.isResonance(ability.id())&&cooldowns.active(p.getUniqueId(),AbilityCooldownTracker.RESONANCE_GROUP,System.currentTimeMillis()))return AbilityResult.fail("ability-resonance-cooldown");
         int requiredEnergy=ability.ultimate()?maxEnergy():ability.energyCost();
         if (current(p) < requiredEnergy) {if(players.settings(p.getUniqueId()).hud())p.sendActionBar(mini.deserialize("<red>Not enough Dragon Energy! <gray>"+current(p)+"/"+requiredEnergy+"</gray>"));if(players.settings(p.getUniqueId()).sounds())p.playSound(p.getLocation(),Sound.BLOCK_NOTE_BLOCK_BASS,.8f,.6f);return AbilityResult.fail(ability.ultimate()?"ability-full-energy":"ability-energy");}
         AbilityResult can = ability.canUse(new AbilityContext(p, this)); if (!can.success()) return can;
@@ -172,137 +173,111 @@ public final class AbilityService {
         if (result.success()) {
             setEnergy(p, current(p) - requiredEnergy);
             long now=System.currentTimeMillis();
-            cooldowns.get(p.getUniqueId()).put(ability.id(), now + ability.cooldownMillis());
-            if(ability.ultimate())cooldowns.get(p.getUniqueId()).put(ULTIMATE_COOLDOWN_KEY,now+integerRoot("ultimate.shared-cooldown-seconds",120)*1000L);
-            if(resonanceIds.contains(ability.id()))startResonanceCooldown(p,ability.id(),now+ability.cooldownMillis());
-            players.cooldowns(p.getUniqueId(),cooldowns.get(p.getUniqueId()));
-            regenBlockedUntil.put(p.getUniqueId(),System.currentTimeMillis()+config.file("abilities.yml").getLong("energy.delay-after-cast-ticks",60)*50L);
+            cooldowns.start(p.getUniqueId(),ability.id(),now+ability.cooldownMillis());
+            if(ability.ultimate())cooldowns.start(p.getUniqueId(),AbilityCooldownTracker.ULTIMATE_GROUP,now+integerRoot("ultimate.shared-cooldown-seconds",120)*1000L);
+            if(resonances.isResonance(ability.id()))startResonanceCooldown(p,ability.id(),now+ability.cooldownMillis());
+            cooldowns.persist(p.getUniqueId());
+            energy.blockRegeneration(p.getUniqueId(),System.currentTimeMillis()+config.file("abilities.yml").getLong("energy.delay-after-cast-ticks",60)*50L);
         }
         return result;
     }
-    public Map<String,Long> cooldowns(Player p){return Collections.unmodifiableMap(cooldowns.computeIfAbsent(p.getUniqueId(),players::cooldowns));}
+    public Map<String,Long> cooldowns(Player p){return cooldowns.view(p);}
     public long cooldownSeconds(Player p,String ability){
         long own=rawCooldownSeconds(p,ability);
         DragonAbility registered=registry.get(ability);
         if(registered!=null&&registered.ultimate())return Math.max(own,ultimateCooldownSeconds(p));
-        if(resonanceIds.contains(ability))return Math.max(own,resonanceGroupCooldownSeconds(p,ability));
+        if(resonances.isResonance(ability))return Math.max(own,resonanceGroupCooldownSeconds(p,ability));
         return own;
     }
-    private long rawCooldownSeconds(Player p,String ability){long ready=cooldowns.computeIfAbsent(p.getUniqueId(),players::cooldowns).getOrDefault(ability,0L);return Math.max(0,(long)Math.ceil((ready-System.currentTimeMillis())/1000d));}
-    public long ultimateCooldownSeconds(Player p){return rawCooldownSeconds(p,ULTIMATE_COOLDOWN_KEY);}
+    private long rawCooldownSeconds(Player p,String ability){return cooldowns.remainingSeconds(p.getUniqueId(),ability,System.currentTimeMillis());}
+    public long ultimateCooldownSeconds(Player p){return rawCooldownSeconds(p,AbilityCooldownTracker.ULTIMATE_GROUP);}
     private long effectiveCooldownSeconds(Player p,DragonAbility ability){
         if(ability==null)return 0;
         long own=rawCooldownSeconds(p,ability.id());
         if(ability.ultimate())return Math.max(own,ultimateCooldownSeconds(p));
-        if(resonanceIds.contains(ability.id()))return Math.max(own,resonanceGroupCooldownSeconds(p,ability.id()));
+        if(resonances.isResonance(ability.id()))return Math.max(own,resonanceGroupCooldownSeconds(p,ability.id()));
         return own;
     }
-    public void clearCooldowns(Player p,String ability){Map<String,Long> map=cooldowns.computeIfAbsent(p.getUniqueId(),players::cooldowns);if(ability.equalsIgnoreCase("all"))map.clear();else{map.remove(ability);DragonAbility selectedAbility=registry.get(ability);if(selectedAbility!=null&&selectedAbility.ultimate())map.remove(ULTIMATE_COOLDOWN_KEY);if(resonanceIds.contains(ability))map.remove(RESONANCE_COOLDOWN_KEY);}players.cooldowns(p.getUniqueId(),map);}
-    public void clearCache(Player player){energy.remove(player.getUniqueId());selected.remove(player.getUniqueId());cooldowns.remove(player.getUniqueId());regenBlockedUntil.remove(player.getUniqueId());activeBulwarks.remove(player.getUniqueId());bulwarkCharge.remove(player.getUniqueId());unlockedResonances.remove(player.getUniqueId());glacialWardCharges.remove(player.getUniqueId());volcanicAegisUntil.remove(player.getUniqueId());resetCombatState(player);}
+    public void clearCooldowns(Player p,String ability){DragonAbility selectedAbility=registry.get(ability);cooldowns.clear(p,ability,selectedAbility!=null&&selectedAbility.ultimate(),resonances.isResonance(ability));}
+    public void clearCache(Player player){UUID id=player.getUniqueId();energy.remove(id);selections.remove(id);cooldowns.remove(id);bulwarks.remove(id);resonances.remove(id);resetCombatState(player);}
     public void handleLogout(Player player){
         UUID id=player.getUniqueId();
-        Integer currentEnergy=energy.get(id);
-        if(currentEnergy!=null)players.energy(id,currentEnergy);
-        Boolean previousFlight=temporaryFlightPrevious.remove(id);
-        if(previousFlight!=null){
-            player.setFlying(false);
-            if(!previousFlight&&player.getGameMode()!=GameMode.CREATIVE&&player.getGameMode()!=GameMode.SPECTATOR)
-                player.setAllowFlight(false);
-        }
-        clearCache(player);
-        volcanicRetaliationReady.remove(id);
+        energy.persistAndRemove(id);
+        temporaryFlight.restoreOnLogout(player);
+        selections.remove(id);cooldowns.remove(id);bulwarks.remove(id);resonances.remove(id);resetCombatState(player);
     }
-    public void clearCaches(){energy.clear();selected.clear();cooldowns.clear();regenBlockedUntil.clear();brittle.clear();revHunt.clear();activeBulwarks.clear();bulwarkCharge.clear();unlockedResonances.clear();glacialWardCharges.clear();volcanicAegisUntil.clear();volcanicRetaliationReady.clear();}
+    public void clearCaches(){energy.clear();selections.clear();cooldowns.clear();brittle.clear();revHunt.clear();bulwarks.clear();resonances.clear();}
     public void resetCombatState(Player player){revHunt.reset(player.getUniqueId());}
-    private void add(String id, String name, AbilityCategory category, int cost, int cooldown, java.util.function.Consumer<Player> action) {
-        registry.put(id, new DragonAbility() {
-            public String id() { return id; } public Component displayName() { return mini.deserialize(name); }
-            public AbilityCategory category() { return category; } public int energyCost() { return cost; }
-            public long cooldownMillis() { return cooldown * 1000L; }
-            public AbilityResult activate(AbilityContext c) { action.accept(c.player()); return AbilityResult.ok(); }
-        });
-    }
-    private void addSoul(String id,String name,AbilityCategory category,int cost,int cooldown,SoulIdentity soul,
-                         java.util.function.Function<AbilityContext,AbilityResult> check,java.util.function.Consumer<Player> action){
-        registry.put(id,new DragonAbility(){
-            public String id(){return id;}public Component displayName(){return mini.deserialize(name);}
-            public AbilityCategory category(){return category;}public int energyCost(){return cost;}
-            public long cooldownMillis(){return cooldown*1000L;}public Set<SoulIdentity> souls(){return Set.of(soul);}
-            public AbilityResult canUse(AbilityContext context){return check.apply(context);}
-            public AbilityResult activate(AbilityContext context){action.accept(context.player());return AbilityResult.ok();}
-        });
-    }
-    private void addUltimate(String id,String name,AbilityCategory category,SoulIdentity soul,java.util.function.Consumer<Player> action){
-        int cost=maxEnergy(),cooldown=integer(id+".cooldown-seconds",120);
-        registry.put(id,new DragonAbility(){
-            public String id(){return id;}public Component displayName(){return mini.deserialize(name);}
-            public AbilityCategory category(){return category;}public int energyCost(){return cost;}
-            public long cooldownMillis(){return cooldown*1000L;}public boolean ultimate(){return true;}
-            public Set<SoulIdentity> souls(){return Set.of(soul);}
-            public AbilityResult activate(AbilityContext context){action.accept(context.player());return AbilityResult.ok();}
-        });
-    }
-    private void addResonance(DragonResonance resonance,String name,AbilityCategory category){
-        int cost=resonanceInteger(resonance.id()+".energy",resonance==DragonResonance.DRAGON_TRINITY?100:70);
-        int cooldown=resonanceInteger(resonance.id()+".cooldown-seconds",720);
-        resonanceIds.add(resonance.id());
-        registry.put(resonance.id(),new DragonAbility(){
-            public String id(){return resonance.id();}public Component displayName(){return mini.deserialize(name);}
-            public AbilityCategory category(){return category;}public int energyCost(){return cost;}
-            public long cooldownMillis(){return cooldown*1000L;}public Set<SoulIdentity> souls(){return resonance.souls();}
-            public AbilityResult canUse(AbilityContext context){
-                List<Player> participants=resonanceParticipants(context.player(),resonance);
-                if(participants.size()!=resonance.souls().size())return AbilityResult.fail("ability-resonance-lost");
-                return participants.stream().anyMatch(player->rawCooldownSeconds(player,RESONANCE_COOLDOWN_KEY)>0)
-                        ?AbilityResult.fail("ability-resonance-cooldown"):AbilityResult.ok();
-            }
-            public AbilityResult activate(AbilityContext context){activateResonance(context.player(),resonance);return AbilityResult.ok();}
-        });
-    }
     private boolean supports(Player player,DragonAbility ability){
         if(!dragonborn.soul(player).map(ability::supports).orElse(false))return false;
-        return !resonanceIds.contains(ability.id())||currentResonance(player).map(value->value.id().equals(ability.id())).orElse(false);
+        return !resonances.isResonance(ability.id())||resonanceCoordinator.current(player).map(value->value.id().equals(ability.id())).orElse(false);
     }
     private List<DragonAbility> available(Player player){return registry.values().stream().filter(ability->supports(player,ability)).toList();}
     private void registerDefaults() {
-        add("wings", label("wings","<light_purple>Wings"), AbilityCategory.MOVEMENT, integer("wings.energy",40),integer("wings.cooldown-seconds",45), p -> {
-            boolean previous=p.getAllowFlight();temporaryFlightPrevious.put(p.getUniqueId(),previous);p.setAllowFlight(true); p.setFlying(true);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {temporaryFlightPrevious.remove(p.getUniqueId());if(!p.isOnline())return;p.setFlying(false);if(!previous&&p.getGameMode()!=GameMode.CREATIVE&&p.getGameMode()!=GameMode.SPECTATOR)p.setAllowFlight(false);p.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING,100,0));},integer("wings.duration-seconds",8)*20L);
-        });
-        add("roar", label("roar","<red>Roar"), AbilityCategory.OFFENSE, integer("roar.energy",35),integer("roar.cooldown-seconds",25), p -> {
-            playAccessibleSound(p.getLocation(),Sound.ENTITY_ENDER_DRAGON_GROWL,1.5f,1f);
-            double radius=decimal("roar.radius",8);for (LivingEntity living : nearbyLiving(p.getLocation(),radius,p)) {
-                Entity e=living;
-                Vector push = e.getLocation().toVector().subtract(p.getLocation().toVector()).normalize().multiply(1.2).setY(.35);
-                e.setVelocity(push); living.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,integer("roar.weakness-seconds",5)*20,0));
-            }
-        });
-        addSoul("akumas-trail",label("akumas-trail","<aqua>Akuma's Trail"),AbilityCategory.MOVEMENT,
-                integer("akumas-trail.energy",25),integer("akumas-trail.cooldown-seconds",12),SoulIdentity.AKUMA,
-                context->AbilityResult.ok(),this::akumasTrail);
-        addSoul("akumas-hush",label("akumas-hush","<blue>Akuma's Hush"),AbilityCategory.OFFENSE,
-                integer("akumas-hush.energy",60),integer("akumas-hush.cooldown-seconds",60),SoulIdentity.AKUMA,
-                context->AbilityResult.ok(),this::akumasHush);
-        addSoul("revs-rend",label("revs-rend","<gold>Rev's Rend"),AbilityCategory.MOVEMENT,
-                integer("revs-rend.energy",25),integer("revs-rend.cooldown-seconds",12),SoulIdentity.REV,
-                context->AbilityResult.ok(),this::revsRend);
-        addSoul("wrath-of-rev",label("wrath-of-rev","<red>Wrath of Rev"),AbilityCategory.OFFENSE,
-                integer("wrath-of-rev.energy",60),integer("wrath-of-rev.cooldown-seconds",60),SoulIdentity.REV,
-                context->AbilityResult.ok(),this::wrathOfRev);
-        addSoul("lamaris-fault",label("lamaris-fault","<dark_gray>Lamari's Fault"),AbilityCategory.OFFENSE,
-                integer("lamaris-fault.energy",30),integer("lamaris-fault.cooldown-seconds",18),SoulIdentity.LAMARI,
-                context->context.player().isFlying()?AbilityResult.ok():AbilityResult.fail("Lamari's Fault must be cast while flying."),this::lamarisFault);
-        addSoul("lamaris-reckoning",label("lamaris-reckoning","<gold>Lamari's Reckoning"),AbilityCategory.OFFENSE,
-                integer("lamaris-reckoning.energy",60),integer("lamaris-reckoning.cooldown-seconds",60),SoulIdentity.LAMARI,
-                context->isGrounded(context.player())?AbilityResult.ok():AbilityResult.fail("Lamari's Reckoning requires solid ground."),this::lamarisReckoning);
-        addUltimate("absolute-zero",label("absolute-zero","<aqua><bold>Absolute Zero</bold>"),AbilityCategory.OFFENSE,SoulIdentity.AKUMA,this::absoluteZero);
-        addUltimate("infernos-wrath",label("infernos-wrath","<red><bold>Inferno's Wrath</bold>"),AbilityCategory.OFFENSE,SoulIdentity.REV,this::infernosWrath);
-        addUltimate("titans-bulwark",label("titans-bulwark","<gray><bold>Titan's Bulwark</bold>"),AbilityCategory.DEFENSE,SoulIdentity.LAMARI,this::titansBulwark);
-        addResonance(DragonResonance.THERMAL_CONVERGENCE,resonanceLabel("thermal-convergence","<gradient:aqua:red><bold>Thermal Convergence</bold></gradient>"),AbilityCategory.OFFENSE);
-        addResonance(DragonResonance.VOLCANIC_AEGIS,resonanceLabel("volcanic-aegis","<gradient:red:gray><bold>Volcanic Aegis</bold></gradient>"),AbilityCategory.DEFENSE);
-        addResonance(DragonResonance.GLACIAL_BASTION,resonanceLabel("glacial-bastion","<gradient:aqua:gray><bold>Glacial Bastion</bold></gradient>"),AbilityCategory.DEFENSE);
-        addResonance(DragonResonance.DRAGON_TRINITY,resonanceLabel("dragon-trinity","<gradient:aqua:red:gold><bold>Dragon Trinity</bold></gradient>"),AbilityCategory.OFFENSE);
+        register(new Wings(this));
+        register(new Roar(this));
+        register(new AkumasTrail(this));
+        register(new AkumasHush(this));
+        register(new AbsoluteZero(this));
+        register(new RevsRend(this));
+        register(new WrathOfRev(this));
+        register(new InfernosWrath(this));
+        register(new LamarisFault(this));
+        register(new LamarisReckoning(this));
+        register(new TitansBulwark(this));
+        registerResonance(new ThermalConvergence(this));
+        registerResonance(new VolcanicAegis(this));
+        registerResonance(new GlacialBastion(this));
+        registerResonance(new DragonTrinity(this));
     }
+    private void register(DragonAbility ability){registry.put(ability.id(),ability);}
+    private void registerResonance(DragonAbility ability){
+        resonances.register(ability.id());
+        register(ability);
+    }
+
+    public void activateWings(Player player){
+        boolean previous=temporaryFlight.enable(player);
+        Bukkit.getScheduler().runTaskLater(plugin,()->{
+            temporaryFlight.finish(player,previous);
+            if(player.isOnline())player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING,100,0));
+        },integer("wings.duration-seconds",8)*20L);
+    }
+    public void activateRoar(Player player){
+        playAccessibleSound(player.getLocation(),Sound.ENTITY_ENDER_DRAGON_GROWL,1.5f,1f);
+        double radius=decimal("roar.radius",8);
+        for(LivingEntity living:nearbyLiving(player.getLocation(),radius,player)){
+            Vector push=living.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.2).setY(.35);
+            living.setVelocity(push);
+            living.addPotionEffect(new PotionEffect(PotionEffectType.WEAKNESS,integer("roar.weakness-seconds",5)*20,0));
+        }
+    }
+    public void activateAkumasTrail(Player player){akumasTrail(player);}
+    public void activateAkumasHush(Player player){akumasHush(player);}
+    public void activateAbsoluteZero(Player player){absoluteZero(player);}
+    public void activateRevsRend(Player player){revsRend(player);}
+    public void activateWrathOfRev(Player player){wrathOfRev(player);}
+    public void activateInfernosWrath(Player player){infernosWrath(player);}
+    public void activateLamarisFault(Player player){lamarisFault(player);}
+    public void activateLamarisReckoning(Player player){lamarisReckoning(player);}
+    public void activateTitansBulwark(Player player){titansBulwark(player);}
+    public boolean grounded(Player player){return isGrounded(player);}
+    public int abilityInteger(String path,int fallback){return integer(path,fallback);}
+    public Component abilityName(String id,String fallback){return mini.deserialize(label(id,fallback));}
+    public Component resonanceName(String id,String fallback){return mini.deserialize(resonanceLabel(id,fallback));}
+    public int resonanceEnergy(DragonResonance resonance){
+        return resonanceInteger(resonance.id()+".energy",resonance==DragonResonance.DRAGON_TRINITY?100:70);
+    }
+    public int resonanceCooldownSeconds(DragonResonance resonance){
+        return resonanceInteger(resonance.id()+".cooldown-seconds",720);
+    }
+    public AbilityResult canUseResonance(Player player,DragonResonance resonance){
+        List<Player> participants=resonanceCoordinator.participants(player,resonance);
+        if(participants.size()!=resonance.souls().size())return AbilityResult.fail("ability-resonance-lost");
+        return participants.stream().anyMatch(member->rawCooldownSeconds(member,AbilityCooldownTracker.RESONANCE_GROUP)>0)
+                ?AbilityResult.fail("ability-resonance-cooldown"):AbilityResult.ok();
+    }
+    public void activateConfiguredResonance(Player player,DragonResonance resonance){activateResonance(player,resonance);}
     private void akumasTrail(Player player){
         if(hasNearbyWater(player.getLocation(),integer("akumas-trail.water-detection-radius",5))){
             armWaterRun(player);
@@ -320,7 +295,7 @@ public final class AbilityService {
                 entity.setBlock(Material.PACKED_ICE.createBlockData());entity.setPersistent(false);entity.setViewRange(24);
                 entity.setTransformation(new Transformation(new Vector3f(),new AxisAngle4f(),new Vector3f(1,.08f,1),new AxisAngle4f()));
             });
-            activeAbilityDisplays.add(display);updateDisplayVisibility(display);
+            displays.track(display);
             ice.add(display);
             particleAccessible(point.clone().add(0,.2,0),Particle.SNOWFLAKE,4,.25,.15,.25,.02);
             for(LivingEntity living:nearbyLiving(point,1.7,player)){
@@ -330,7 +305,7 @@ public final class AbilityService {
             }
         }
         long duration=integer("akumas-trail.ice-duration-seconds",6)*20L;
-        Bukkit.getScheduler().runTaskLater(plugin,()->removeDisplays(ice),duration);
+        Bukkit.getScheduler().runTaskLater(plugin,()->displays.remove(ice),duration);
     }
     private boolean hasNearbyWater(Location center,int radius){
         Block origin=center.getBlock();
@@ -359,7 +334,7 @@ public final class AbilityService {
         playAccessibleSound(player.getLocation(),Sound.BLOCK_GLASS_BREAK,1f,1.65f);
         new BukkitRunnable(){int ticks;public void run(){
             if(!player.isOnline()||player.isDead()||ticks++>=durationTicks){
-                revertBlocks(frozen,Material.FROSTED_ICE);
+                terrain.revert(frozen,Material.FROSTED_ICE);
                 cancel();return;
             }
             Block feet=player.getLocation().getBlock();
@@ -371,7 +346,7 @@ public final class AbilityService {
                     if(!frozen.containsKey(water)){
                         BlockData original=water.getBlockData().clone();
                         frozen.put(water,original);
-                        trackTemporary(water,original,Material.FROSTED_ICE);
+                        terrain.track(water,original,Material.FROSTED_ICE);
                     }
                     water.setType(Material.FROSTED_ICE,false);
                 }
@@ -605,14 +580,14 @@ public final class AbilityService {
                             integer("absolute-zero.presentation.shell-break-particles",20),.4,.7,.4,.12);
                     playAccessibleSound(target.getLocation(),Sound.BLOCK_GLASS_BREAK,.75f,1.55f);
                 }
-                removeDisplays(shell);cancel();return;
+                displays.remove(shell);cancel();return;
             }
             double angle=ticks*decimal("absolute-zero.presentation.shell-rotation-radians-per-tick",.09);
             for(int index=0;index<shell.size();index++){
                 BlockDisplay display=shell.get(index);
                 if(display.isValid())display.teleport(iceShellLocation(target,index,count,angle,radius,scale));
             }
-            if(ticks%10==0)shell.forEach(AbilityService.this::updateDisplayVisibility);
+            if(ticks%10==0)shell.forEach(displays::refreshVisibility);
             ticks++;
         }}.runTaskTimer(plugin,0,1);
     }
@@ -683,8 +658,7 @@ public final class AbilityService {
     }
     private void titansBulwark(Player player){
         int durationTicks=integer("titans-bulwark.duration-seconds",7)*20;
-        activeBulwarks.add(player.getUniqueId());
-        bulwarkCharge.put(player.getUniqueId(),0d);
+        bulwarks.activate(player.getUniqueId());
         player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE,durationTicks,integer("titans-bulwark.resistance-amplifier",3),false,true,true));
         int activeSlow=integer("titans-bulwark.downside.active-slowness-amplifier",1);
         if(activeSlow>=0)player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS,durationTicks,activeSlow,false,true,true));
@@ -692,23 +666,21 @@ public final class AbilityService {
         playAccessibleSound(player.getLocation(),Sound.BLOCK_DEEPSLATE_BRICKS_PLACE,1.2f,.45f);
         List<BlockDisplay> shell=new ArrayList<>();
         Bukkit.getScheduler().runTaskLater(plugin,()->{
-            if(!activeBulwarks.contains(player.getUniqueId())||!player.isOnline())return;
+            if(!bulwarks.active(player.getUniqueId())||!player.isOnline())return;
             for(int i=0;i<6;i++)shell.add(spawnShellBlock(player,i));
             playAccessibleSound(player.getLocation(),Sound.BLOCK_ANVIL_LAND,.8f,.75f);
         },integer("titans-bulwark.presentation.impact-delay-ticks",8));
         new BukkitRunnable(){int ticks;public void run(){
             if(!player.isOnline()||player.isDead()||ticks++>=durationTicks){
-                activeBulwarks.remove(player.getUniqueId());
-                removeDisplays(shell);
-                double stored=bulwarkCharge.getOrDefault(player.getUniqueId(),0d);
-                bulwarkCharge.remove(player.getUniqueId());
+                displays.remove(shell);
+                double stored=bulwarks.deactivate(player.getUniqueId());
                 if(player.isOnline()&&!player.isDead())bulwarkExpiry(player,stored);
                 cancel();return;
             }
             for(int i=0;i<shell.size();i++)shell.get(i).teleport(shellLocation(player,i));
             if(ticks%20==0)shell.forEach(AbilityService.this::updateShellVisibility);
             if(ticks%5==0){
-                double ratio=bulwarkCharge.getOrDefault(player.getUniqueId(),0d)
+                double ratio=bulwarks.charge(player.getUniqueId())
                         /Math.max(1,decimal("titans-bulwark.stored-damage-cap",16));
                 particleAccessible(player.getLocation().add(0,1,0),ratio>.65?Particle.ENCHANTED_HIT:Particle.CRIT,
                         integer("titans-bulwark.presentation.active-particles",4),.7,1,.7,.01);
@@ -722,24 +694,10 @@ public final class AbilityService {
             display.setPersistent(false);display.setViewRange(32);
             display.setTransformation(new Transformation(new Vector3f(),new AxisAngle4f(),new Vector3f(.72f,.72f,.72f),new AxisAngle4f()));
         });
-        activeAbilityDisplays.add(shell);
-        for(Player viewer:player.getWorld().getPlayers()){
-            var settings=players.settings(viewer.getUniqueId());
-            if(!settings.animationParticles()||settings.effects()==com.dragonaltar.player.EffectMode.MINIMAL)
-                viewer.hideEntity(plugin,shell);
-        }
-        return shell;
+        return displays.track(shell);
     }
     private void updateShellVisibility(BlockDisplay shell){
-        updateDisplayVisibility(shell);
-    }
-    private void updateDisplayVisibility(Display display){
-        for(Player viewer:display.getWorld().getPlayers()){
-            var settings=players.settings(viewer.getUniqueId());
-            if(!settings.animationParticles()||settings.effects()==com.dragonaltar.player.EffectMode.MINIMAL)
-                viewer.hideEntity(plugin,display);
-            else viewer.showEntity(plugin,display);
-        }
+        displays.refreshVisibility(shell);
     }
     private Location shellLocation(Player player,int index){
         double[][] offsets={{.8,.7,0},{-.8,.7,0},{0,.7,.8},{0,.7,-.8},{0,1.55,0},{0,-.05,0}};
@@ -768,102 +726,25 @@ public final class AbilityService {
         applyUltimateDownside(player,"titans-bulwark");
     }
 
-    private void refreshResonanceUnlocks(){
-        Set<UUID> online=new HashSet<>();
-        for(Player player:Bukkit.getOnlinePlayers()){
-            if(!dragonborn.isDragonborn(player.getUniqueId()))continue;
-            online.add(player.getUniqueId());
-            String previous=unlockedResonances.get(player.getUniqueId());
-            Optional<DragonResonance> current=currentResonance(player);
-            String next=current.map(DragonResonance::id).orElse(null);
-            if(Objects.equals(previous,next))continue;
-            if(next==null){
-                unlockedResonances.remove(player.getUniqueId());
-                if(previous!=null)plugin.messages().send(player,"resonance-lost");
-            }else{
-                unlockedResonances.put(player.getUniqueId(),next);
-                plugin.messages().send(player,"resonance-unlocked",
-                        "ability",current.orElseThrow().displayName(),
-                        "partners",resonancePartnerNames(player,current.orElseThrow()),
-                        "range",Integer.toString((int)Math.round(Math.sqrt(resonanceRangeSquared()))));
-                playAccessibleSound(player.getLocation(),Sound.BLOCK_BEACON_ACTIVATE,.8f,1.35f);
-            }
-        }
-        unlockedResonances.keySet().removeIf(id->!online.contains(id));
-    }
-
-    private Optional<DragonResonance> currentResonance(Player player){
-        if(trinityParticipants().stream().anyMatch(member->member.getUniqueId().equals(player.getUniqueId())))
-            return Optional.of(DragonResonance.DRAGON_TRINITY);
-        SoulIdentity identity=dragonborn.soul(player).orElse(null);
-        if(identity==null)return Optional.empty();
-        double rangeSquared=resonanceRangeSquared();
-        return Bukkit.getOnlinePlayers().stream()
-                .filter(other->other!=player&&dragonborn.isDragonborn(other.getUniqueId()))
-                .filter(other->other.getWorld().equals(player.getWorld())&&other.getLocation().distanceSquared(player.getLocation())<=rangeSquared)
-                .min(Comparator.comparingDouble(other->other.getLocation().distanceSquared(player.getLocation())))
-                .flatMap(other->dragonborn.soul(other).flatMap(partner->DragonResonance.pair(identity,partner)));
-    }
-
-    private List<Player> resonanceParticipants(Player caster,DragonResonance resonance){
-        if(resonance==DragonResonance.DRAGON_TRINITY){
-            List<Player> trio=trinityParticipants();
-            return trio.stream().anyMatch(player->player.getUniqueId().equals(caster.getUniqueId()))?trio:List.of();
-        }
-        SoulIdentity casterSoul=dragonborn.soul(caster).orElse(null);
-        if(casterSoul==null||!resonance.souls().contains(casterSoul))return List.of();
-        Set<SoulIdentity> needed=new HashSet<>(resonance.souls());needed.remove(casterSoul);
-        Optional<? extends Player> partner=Bukkit.getOnlinePlayers().stream()
-                .filter(other->other!=caster&&other.getWorld().equals(caster.getWorld()))
-                .filter(other->other.getLocation().distanceSquared(caster.getLocation())<=resonanceRangeSquared())
-                .filter(other->dragonborn.soul(other).map(needed::contains).orElse(false))
-                .findFirst();
-        return partner.map(player->List.of(caster,player)).orElseGet(List::of);
-    }
-
-    private List<Player> trinityParticipants(){
-        EnumMap<SoulIdentity,Player> members=new EnumMap<>(SoulIdentity.class);
-        for(Player player:Bukkit.getOnlinePlayers())dragonborn.soul(player).ifPresent(identity->members.put(identity,player));
-        if(members.size()!=3)return List.of();
-        List<Player> trio=List.copyOf(members.values());
-        double rangeSquared=resonanceRangeSquared();
-        for(int first=0;first<trio.size();first++)for(int second=first+1;second<trio.size();second++)
-            if(!trio.get(first).getWorld().equals(trio.get(second).getWorld())
-                    ||trio.get(first).getLocation().distanceSquared(trio.get(second).getLocation())>rangeSquared)return List.of();
-        return trio;
-    }
-
-    private double resonanceRangeSquared(){
-        double range=config.file("abilities.yml").getDouble("resonances.unlock-range-blocks",50);
-        return range*range;
-    }
-
-    private String resonancePartnerNames(Player caster,DragonResonance resonance){
-        return resonanceParticipants(caster,resonance).stream().filter(player->player!=caster)
-                .map(Player::getName).collect(java.util.stream.Collectors.joining(", "));
-    }
-
     private void startResonanceCooldown(Player caster,String abilityId,long readyAt){
         DragonResonance resonance=Arrays.stream(DragonResonance.values()).filter(value->value.id().equals(abilityId)).findFirst().orElse(null);
         if(resonance==null)return;
-        for(Player participant:resonanceParticipants(caster,resonance)){
-            Map<String,Long> map=cooldowns.computeIfAbsent(participant.getUniqueId(),players::cooldowns);
-            map.put(abilityId,readyAt);
-            map.put(RESONANCE_COOLDOWN_KEY,readyAt);
-            players.cooldowns(participant.getUniqueId(),map);
+        for(Player participant:resonanceCoordinator.participants(caster,resonance)){
+            cooldowns.start(participant.getUniqueId(),abilityId,readyAt);
+            cooldowns.startAndPersist(participant.getUniqueId(),AbilityCooldownTracker.RESONANCE_GROUP,readyAt);
         }
     }
 
     private long resonanceGroupCooldownSeconds(Player caster,String abilityId){
         DragonResonance resonance=Arrays.stream(DragonResonance.values()).filter(value->value.id().equals(abilityId)).findFirst().orElse(null);
-        if(resonance==null)return rawCooldownSeconds(caster,RESONANCE_COOLDOWN_KEY);
-        List<Player> participants=resonanceParticipants(caster,resonance);
-        if(participants.isEmpty())return rawCooldownSeconds(caster,RESONANCE_COOLDOWN_KEY);
-        return participants.stream().mapToLong(player->rawCooldownSeconds(player,RESONANCE_COOLDOWN_KEY)).max().orElse(0);
+        if(resonance==null)return rawCooldownSeconds(caster,AbilityCooldownTracker.RESONANCE_GROUP);
+        List<Player> participants=resonanceCoordinator.participants(caster,resonance);
+        if(participants.isEmpty())return rawCooldownSeconds(caster,AbilityCooldownTracker.RESONANCE_GROUP);
+        return participants.stream().mapToLong(player->rawCooldownSeconds(player,AbilityCooldownTracker.RESONANCE_GROUP)).max().orElse(0);
     }
 
     private void activateResonance(Player caster,DragonResonance resonance){
-        List<Player> team=resonanceParticipants(caster,resonance);
+        List<Player> team=resonanceCoordinator.participants(caster,resonance);
         if(team.size()!=resonance.souls().size())return;
         Location center=teamCenter(team);
         for(Player member:team){
@@ -969,7 +850,7 @@ public final class AbilityService {
         int pulseInterval=Math.max(20,resonanceInteger("dragon-trinity.pulse-interval-ticks",60));
         new BukkitRunnable(){int ticks;public void run(){
             if(!validTeam(team)||ticks>impactDelay+activeTicks){
-                removeDisplays(sigil);cancel();return;
+                displays.remove(sigil);cancel();return;
             }
             Location midpoint=teamCenter(team);
             updateCenterOrbit(sigil,midpoint,ticks,resonanceDecimal("dragon-trinity.sigil-radius",2.3),.075);
@@ -984,7 +865,7 @@ public final class AbilityService {
             if(active>0&&active<activeTicks&&active%pulseInterval==0)trinityPulse(caster,team,midpoint,active/pulseInterval);
             if(active==activeTicks){
                 trinityFinisher(caster,team,midpoint);
-                removeDisplays(sigil);cancel();return;
+                displays.remove(sigil);cancel();return;
             }
             ticks++;
         }}.runTaskTimer(plugin,0,1);
@@ -1048,7 +929,7 @@ public final class AbilityService {
             member.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE,duration,resonanceInteger("volcanic-aegis.resistance-amplifier",1)));
             member.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION,duration,resonanceInteger("volcanic-aegis.absorption-amplifier",2)));
             member.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE,duration,0));
-            volcanicAegisUntil.put(member.getUniqueId(),expires);
+            resonances.grantAegis(member.getUniqueId(),expires);
         }
         resonancePhase(team,"<red><bold>MAGMA ARMOR FORGED</bold></red>");
         for(Player member:team){
@@ -1085,7 +966,7 @@ public final class AbilityService {
         }
     }
 
-    private void clearVolcanicAegis(List<Player> team){for(Player member:team)volcanicAegisUntil.remove(member.getUniqueId());}
+    private void clearVolcanicAegis(List<Player> team){for(Player member:team)resonances.clearAegis(member.getUniqueId());}
 
     private void glacialImpact(List<Player> team){
         int duration=resonanceInteger("glacial-bastion.active-seconds",10)*20;
@@ -1093,7 +974,7 @@ public final class AbilityService {
         for(Player member:team){
             member.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE,duration,resonanceInteger("glacial-bastion.resistance-amplifier",1)));
             member.addPotionEffect(new PotionEffect(PotionEffectType.ABSORPTION,duration,resonanceInteger("glacial-bastion.absorption-amplifier",2)));
-            glacialWardCharges.put(member.getUniqueId(),charges);
+            resonances.grantWard(member.getUniqueId(),charges);
         }
         resonancePhase(team,"<aqua><bold>CRYSTAL WARDS: "+charges+"</bold></aqua>");
         for(Player member:team){
@@ -1127,7 +1008,7 @@ public final class AbilityService {
         }
     }
 
-    private void clearGlacialWards(List<Player> team){for(Player member:team)glacialWardCharges.remove(member.getUniqueId());}
+    private void clearGlacialWards(List<Player> team){for(Player member:team)resonances.clearWard(member.getUniqueId());}
 
     private void trinityImpact(Player caster,List<Player> team,Location center){
         int duration=resonanceInteger("dragon-trinity.active-seconds",12)*20;
@@ -1213,7 +1094,7 @@ public final class AbilityService {
             double angle=Math.PI*2*anchored.index()/anchored.count()+ticks*speed;
             double y=.35+(anchored.index()%3)*.55+Math.sin(angle*2)*.1;
             anchored.display().teleport(anchored.anchor().getLocation().add(Math.cos(angle)*radius-.2,y,Math.sin(angle)*radius-.2));
-            if(ticks%10==0)updateDisplayVisibility(anchored.display());
+            if(ticks%10==0)this.displays.refreshVisibility(anchored.display());
         }
     }
 
@@ -1230,7 +1111,7 @@ public final class AbilityService {
             double angle=Math.PI*2*index/displays.size()+ticks*speed;
             double y=.5+(index%3)*.75+Math.sin(angle*3)*.18;
             display.teleport(center.clone().add(Math.cos(angle)*radius-.25,y,Math.sin(angle)*radius-.25));
-            if(ticks%10==0)updateDisplayVisibility(display);
+            if(ticks%10==0)this.displays.refreshVisibility(display);
         }
     }
 
@@ -1241,8 +1122,7 @@ public final class AbilityService {
             entity.setInterpolationDuration(2);
             entity.setTransformation(new Transformation(new Vector3f(),new AxisAngle4f(),new Vector3f(bounded,bounded,bounded),new AxisAngle4f()));
         });
-        activeAbilityDisplays.add(display);updateDisplayVisibility(display);
-        return display;
+        return displays.track(display);
     }
 
     private void particleLink(Location from,Location to,Particle particle,int requestedPoints){
@@ -1260,14 +1140,7 @@ public final class AbilityService {
     }
 
     private void removeAnchoredDisplays(Collection<AnchoredDisplay> displays){
-        removeDisplays(displays.stream().map(AnchoredDisplay::display).toList());
-    }
-
-    private void removeDisplays(Collection<? extends Entity> displays){
-        for(Entity display:displays){
-            if(display instanceof Display visual)activeAbilityDisplays.remove(visual);
-            if(display.isValid())display.remove();
-        }
+        this.displays.remove(displays.stream().map(AnchoredDisplay::display).toList());
     }
 
     private record AnchoredDisplay(BlockDisplay display,Player anchor,int index,int count){}
@@ -1327,7 +1200,7 @@ public final class AbilityService {
             if(second>=0)player.addPotionEffect(new PotionEffect(secondary,duration*20,second,false,true,true));
         }
         int lock=integer(ability+".downside.energy-regeneration-lock-seconds",5);
-        regenBlockedUntil.merge(player.getUniqueId(),System.currentTimeMillis()+lock*1000L,Math::max);
+        energy.blockRegeneration(player.getUniqueId(),System.currentTimeMillis()+lock*1000L);
         if(players.settings(player.getUniqueId()).hud())player.sendActionBar(plugin.messages().component("ultimate-downside",
                 "downside",config.file("abilities.yml").getString("abilities."+ability+".downside.name","Recovery"),
                 "seconds",Integer.toString(Math.max(duration,lock))));
@@ -1335,12 +1208,11 @@ public final class AbilityService {
     }
     public void handleResonanceDefense(EntityDamageEvent event){
         if(suppressCombatInteractions||event.isCancelled()||event.getFinalDamage()<=0||!(event.getEntity() instanceof Player defender))return;
-        int charges=glacialWardCharges.getOrDefault(defender.getUniqueId(),0);
+        int charges=resonances.wardCharges(defender.getUniqueId());
         if(charges<=0)return;
         double reduction=Math.max(0,Math.min(.9,resonanceDecimal("glacial-bastion.ward-damage-reduction-fraction",.5)));
         event.setDamage(event.getDamage()*(1-reduction));
-        int remaining=charges-1;
-        if(remaining==0)glacialWardCharges.remove(defender.getUniqueId());else glacialWardCharges.put(defender.getUniqueId(),remaining);
+        int remaining=resonances.consumeWard(defender.getUniqueId());
         playAccessibleSound(defender.getLocation(),Sound.BLOCK_GLASS_BREAK,.9f,1.4f);
         particleAccessible(defender.getLocation().add(0,1,0),Particle.ITEM_SNOWBALL,
                 resonanceInteger("glacial-bastion.ward-break-particles",28),.55,.8,.55,.14);
@@ -1350,7 +1222,7 @@ public final class AbilityService {
 
     public void handleResonanceRetaliation(EntityDamageByEntityEvent event){
         if(suppressCombatInteractions||event.isCancelled()||event.getFinalDamage()<=0||!(event.getEntity() instanceof Player defender)
-                ||volcanicAegisUntil.getOrDefault(defender.getUniqueId(),0L)<=System.currentTimeMillis())return;
+                ||!resonances.hasAegis(defender.getUniqueId(),System.currentTimeMillis()))return;
         LivingEntity attacker=null;
         if(event.getDamager() instanceof LivingEntity living)attacker=living;
         else if(event.getDamager() instanceof Projectile projectile&&projectile.getShooter() instanceof LivingEntity living)attacker=living;
@@ -1358,8 +1230,7 @@ public final class AbilityService {
         UUID key=new UUID(defender.getUniqueId().getMostSignificantBits()^attacker.getUniqueId().getMostSignificantBits(),
                 defender.getUniqueId().getLeastSignificantBits()^attacker.getUniqueId().getLeastSignificantBits());
         long now=System.currentTimeMillis();
-        if(volcanicRetaliationReady.getOrDefault(key,0L)>now)return;
-        volcanicRetaliationReady.put(key,now+resonanceInteger("volcanic-aegis.retaliation-cooldown-ticks",30)*50L);
+        if(!resonances.claimRetaliation(key,now,now+resonanceInteger("volcanic-aegis.retaliation-cooldown-ticks",30)*50L))return;
         dealAbilityDamage(attacker,resonanceDecimal("volcanic-aegis.retaliation-damage",3),defender);
         attacker.setFireTicks(Math.max(attacker.getFireTicks(),resonanceInteger("volcanic-aegis.retaliation-fire-seconds",3)*20));
         playAccessibleSound(attacker.getLocation(),Sound.ITEM_FIRECHARGE_USE,.65f,1.05f);
@@ -1411,19 +1282,19 @@ public final class AbilityService {
 
     public void handleBulwarkDamage(EntityDamageEvent event){
         if(event.isCancelled()||!(event.getEntity() instanceof Player defender)
-                ||!activeBulwarks.contains(defender.getUniqueId()))return;
+                ||!bulwarks.active(defender.getUniqueId()))return;
         double prevented=Math.max(0,event.getDamage()-event.getFinalDamage());
         double stored=AbilityCombatRules.storedBulwarkDamage(
-                bulwarkCharge.getOrDefault(defender.getUniqueId(),0d),prevented,
+                bulwarks.charge(defender.getUniqueId()),prevented,
                 decimal("titans-bulwark.stored-damage-fraction",.35),
                 decimal("titans-bulwark.stored-damage-cap",16));
-        bulwarkCharge.put(defender.getUniqueId(),stored);
+        bulwarks.charge(defender.getUniqueId(),stored);
         if(players.settings(defender.getUniqueId()).hud())
             defender.sendActionBar(mini.deserialize("<gold>Bulwark Charge:</gold> <white>"+String.format(Locale.ROOT,"%.1f",stored)+"</white>"));
     }
 
     public void handleBulwarkMelee(EntityDamageByEntityEvent event){
-        if(suppressCombatInteractions||reflectionGuard.active()||!(event.getEntity() instanceof Player defender)||!activeBulwarks.contains(defender.getUniqueId()))return;
+        if(suppressCombatInteractions||reflectionGuard.active()||!(event.getEntity() instanceof Player defender)||!bulwarks.active(defender.getUniqueId()))return;
         if(!(event.getDamager() instanceof LivingEntity attacker)||attacker==defender)return;
         double reflected=Math.max(0,event.getFinalDamage()*decimal("titans-bulwark.reflected-damage-fraction",.4));
         if(reflected>0&&reflectionGuard.enter()){
@@ -1583,8 +1454,8 @@ public final class AbilityService {
                         +" Rampage: "+revHunt.rampage(player.getUniqueId())+"/"+integer("infernos-wrath.maximum-rampage",4));
             if(revHunt.finisherArmed(player.getUniqueId(),now))parts.add("Predator's Claim Ready");
         }
-        if(activeBulwarks.contains(player.getUniqueId()))
-            parts.add("Bulwark: "+String.format(Locale.ROOT,"%.1f",bulwarkCharge.getOrDefault(player.getUniqueId(),0d)));
+        if(bulwarks.active(player.getUniqueId()))
+            parts.add("Bulwark: "+String.format(Locale.ROOT,"%.1f",bulwarks.charge(player.getUniqueId())));
         return parts.isEmpty()?"":" | "+String.join(" | ",parts);
     }
 
@@ -1644,25 +1515,6 @@ public final class AbilityService {
         }
     }
 
-    private void trackTemporary(Block block,BlockData original,Material expected){
-        temporaryTerrain.putIfAbsent(block,new TemporaryTerrain(original.clone(),expected));
-    }
-    private void revertBlocks(Map<Block,BlockData> originals,Material expected){
-        revertBlocks(originals,Set.of(expected));
-    }
-    private void revertBlocks(Map<Block,BlockData> originals,Set<Material> expected){
-        for(var entry:originals.entrySet()){
-            if(expected.contains(entry.getKey().getType()))entry.getKey().setBlockData(entry.getValue(),false);
-            temporaryTerrain.remove(entry.getKey());
-        }
-    }
-    private void revertAllTemporaryTerrain(){
-        for(var entry:new ArrayList<>(temporaryTerrain.entrySet()))
-            if(entry.getKey().getType()==entry.getValue().expected())
-                entry.getKey().setBlockData(entry.getValue().original(),false);
-        temporaryTerrain.clear();
-    }
-    private record TemporaryTerrain(BlockData original,Material expected){}
     private static List<LivingEntity> nearbyLiving(Location center,double radius,Player owner){
         if(center.getWorld()==null)return List.of();
         double boundedRadius=boundedTargetRadius(radius);
