@@ -24,5 +24,4 @@ Install the JAR in `plugins`, start once, complete `/dragon setup begin`, save t
 
 Important release gates:
 
-- Complete [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md) on a live Paper server.
-- Replace publishing and support placeholders before creating a listing.
+- Complete live validation on Paper 1.21.4 with Java 21 before production use.

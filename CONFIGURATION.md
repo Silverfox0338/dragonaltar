@@ -76,7 +76,7 @@ Deleting a key intentionally causes the packaged default to return at the next l
 5. Start Paper and inspect the console for migration or validation messages.
 6. Run `/dragon system validate`, `/dragon altar validate`, and `/dragon system health`.
 7. Confirm ownership, pending transfers, cooldowns, displays, and refunds.
-8. Complete the upgrade section of [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md).
+8. Complete live upgrade checks on a test server before returning to production.
 
 Do not copy fresh bundled YAML over installed YAML. DragonAltar performs the merge.
 

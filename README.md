@@ -45,7 +45,7 @@ Paper and optional plugin APIs are provided dependencies and are not bundled in 
 4. Review `plugins/DragonAltar/config.yml` and the other generated YAML files.
 5. Run `/dragon setup begin` and record the altar, interaction, ritual, arrival, fountain, and crystal locations.
 6. Run `/dragon setup save`, then `/dragon setup validate`.
-7. Complete the manual checks in [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md).
+7. Validate the setup and gameplay flow on a test server before production.
 8. After testing, set `server-mode: PRODUCTION`. Keep destructive production commands disabled unless they are deliberately needed.
 
 DragonAltar does not paste or replace a physical altar. The altar egg is a protected `BlockDisplay`, not an obtainable egg block.
@@ -133,9 +133,7 @@ paywalled DragonAltar features require separate written permission.
 
 DragonAltar does not include telemetry, analytics, an update checker, or outbound service calls. It stores gameplay and configuration data locally. See [PRIVACY.md](PRIVACY.md).
 
-## Support and issue reports
-
-No public support URL or issue tracker is present in this repository. Before publishing, replace the support placeholders in [PUBLISHING.md](PUBLISHING.md) with the intended project channels.
+## Issue reports
 
 When reporting an issue, include:
 
@@ -151,6 +149,5 @@ Remove player-identifying data and secrets before sharing logs or data files.
 ## Known limitations and release gates
 
 - A live Paper server is required to verify fountain recognition, respawn beams, display interpolation, inventory behavior, chunk transitions, integrations, shutdown cleanup, and multiplayer performance.
-- No project, source, support, donation, or issue-tracker URL is established.
 
-See [RELEASE-NOTES.md](RELEASE-NOTES.md), [CHANGELOG.md](CHANGELOG.md), [RELEASE-VERIFICATION.md](RELEASE-VERIFICATION.md), [BETA-TESTING.md](BETA-TESTING.md), and [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md).
+See [RELEASE-NOTES.md](RELEASE-NOTES.md) and [CHANGELOG.md](CHANGELOG.md) for release details.

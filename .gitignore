@@ -1,19 +1,46 @@
 # Maven
 target/
 dependency-reduced-pom.xml
+.flattened-pom.xml
+release.properties
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+pom.xml.tag
+pom.xml.branch
+.mvn/timing.properties
+
+# Compiled output
+*.class
+*.jar
+*.war
+*.nar
+out/
+bin/
+hs_err_pid*
+replay_pid*
 
 # IDEs and editors
 .idea/
 .vscode/
+.fleet/
 *.iml
 *.ipr
 *.iws
 .classpath
 .project
+.factorypath
 .settings/
+*.swp
+*.swo
+*~
+.history/
 
 # Runtime Paper server files
 plugins/
+run/
+server/
+test-server/
 world/
 world_nether/
 world_the_end/
@@ -21,6 +48,9 @@ logs/
 cache/
 libraries/
 versions/
+crash-reports/
+server.jar
+paper.jar
 server.properties
 bukkit.yml
 spigot.yml
@@ -28,6 +58,12 @@ paper*.yml
 commands.yml
 permissions.yml
 eula.txt
+help.yml
+ops.json
+whitelist.json
+banned-ips.json
+banned-players.json
+usercache.json
 *.log
 
 # DragonAltar generated data and operations
@@ -35,6 +71,7 @@ data/
 backups/
 schematics/
 *.tmp
+*.bak
 
 # Local archives and secrets
 *.zip
@@ -42,10 +79,22 @@ schematics/
 *.tar.gz
 .env
 .env.*
+!.env.example
 *.key
 *.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
 secrets/
+
+# Owner working notes
+BETA-TESTING.md
+PUBLISHING.md
+RELEASE-CHECKLIST.md
+RELEASE-VERIFICATION.md
 
 # Operating systems
 .DS_Store
 Thumbs.db
+Desktop.ini
