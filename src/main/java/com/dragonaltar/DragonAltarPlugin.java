@@ -81,6 +81,8 @@ public final class DragonAltarPlugin extends JavaPlugin {
             if(integrations().contains("ScaledEnderDragon")) getLogger().warning("DragonAltar uses vanilla respawning so ScaledEnderDragon can scale it. Remove dragon egg rewards from its rewards.yml.");
             if(!validateSetup().equals("Valid"))
                 getLogger().warning("DragonAltar is installed but has not been configured. Run /dragon setup begin; the Ancient Dragon Event cannot start until validation passes.");
+            int escapedFocuses=dragonborn.removeEscapedFocusEntities();
+            if(escapedFocuses>0)getLogger().warning("Removed "+escapedFocuses+" escaped Dragon Focus item entities during startup.");
             Bukkit.getOnlinePlayers().forEach(p->{dragonborn.apply(p);rituals.refundPending(p);});
             Bukkit.getScheduler().runTask(this,this::recoverPendingTransfers);
         } catch(Exception e) { getLogger().log(java.util.logging.Level.SEVERE,"DragonAltar failed to enable",e); getServer().getPluginManager().disablePlugin(this); }
