@@ -23,6 +23,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -37,6 +38,8 @@ public final class SoulConsequenceService implements Listener {
     private final Map<String, FracturedRecord> fractured = new HashMap<>();
     private final Map<String, LimboRecord> limbo = new HashMap<>();
     private final Map<String, BossBar> bars = new HashMap<>();
+    private final Set<String> spawning = new HashSet<>();
+    private final Set<String> respawnsScheduled = new HashSet<>();
     private long ritualCasts;
     private long lastCoordinateUpdate;
     private BukkitTask task;
@@ -51,6 +54,8 @@ public final class SoulConsequenceService implements Listener {
         stop();
         fractured.clear();
         limbo.clear();
+        spawning.clear();
+        respawnsScheduled.clear();
         YamlConfiguration y = store.load("consequences.yml");
         ritualCasts = Math.max(0, y.getLong("instability-casts"));
         ConfigurationSection fracturedRoot = y.getConfigurationSection("fractured");
@@ -100,6 +105,8 @@ public final class SoulConsequenceService implements Listener {
         ritualCasts = 0;
         fractured.clear();
         limbo.clear();
+        spawning.clear();
+        respawnsScheduled.clear();
         for (World world : Bukkit.getWorlds()) for (Entity entity : world.getEntities())
             if (entity instanceof WitherSkeleton skeleton && soulId(skeleton) != null) skeleton.remove();
         persist();
@@ -124,6 +131,17 @@ public final class SoulConsequenceService implements Listener {
 
     public void manifest(String soulId, Location origin, String reason) {
         plugin.souls().fractured(soulId, reason);
+        FracturedRecord existing = fractured.get(soulId);
+        if (existing != null) {
+            WitherSkeleton mob = reconcileLoaded(soulId);
+            if (mob != null) {
+                ensureBar(soulId, mob);
+                updateBar(soulId, mob, true);
+            }
+            persist();
+            plugin.audit().record("FRACTURED_MANIFEST_REUSED", "SYSTEM", soulId + " already tracked");
+            return;
+        }
         Location spawn = origin == null ? plugin.configuredLocation("altar.yml", "ritual-center") : origin.clone();
         FracturedRecord record = new FracturedRecord(null, spawn, nextTeleportAt());
         fractured.put(soulId, record);
@@ -151,7 +169,9 @@ public final class SoulConsequenceService implements Listener {
             FracturedRecord record = fractured.get(soulId);
             WitherSkeleton mob = entity(record.entityId());
             if (mob == null) {
-                mob = entity(soulId);
+                if (FracturedSoulRules.waitForTrackedChunk(record.entityId(), false, trackedChunkLoaded(record)))
+                    continue;
+                mob = reconcileLoaded(soulId);
                 if (mob != null) {
                     record = new FracturedRecord(mob.getUniqueId(), mob.getLocation(), record.nextTeleport());
                     fractured.put(soulId, record);
@@ -196,7 +216,9 @@ public final class SoulConsequenceService implements Listener {
         for (Map.Entry<String, FracturedRecord> entry : new ArrayList<>(fractured.entrySet())) {
             WitherSkeleton mob = entity(entry.getValue().entityId());
             if (mob == null) {
-                mob = entity(entry.getKey());
+                if (FracturedSoulRules.waitForTrackedChunk(entry.getValue().entityId(), false,
+                        trackedChunkLoaded(entry.getValue()))) continue;
+                mob = reconcileLoaded(entry.getKey());
                 if (mob != null) fractured.put(entry.getKey(), new FracturedRecord(
                         mob.getUniqueId(), mob.getLocation(), entry.getValue().nextTeleport()));
             }
@@ -209,27 +231,30 @@ public final class SoulConsequenceService implements Listener {
     }
 
     private void removeStaleFracturedEntities() {
-        Map<String, WitherSkeleton> retained = new HashMap<>();
         for (World world : Bukkit.getWorlds()) for (Entity entity : world.getEntities()) {
             if (!(entity instanceof WitherSkeleton skeleton)) continue;
             String soulId = soulId(skeleton);
             if (soulId == null) continue;
-            FracturedRecord record = fractured.get(soulId);
-            if (record == null) {
-                skeleton.remove();
-                continue;
-            }
-            WitherSkeleton existing = retained.get(soulId);
-            if (existing == null || skeleton.getUniqueId().equals(record.entityId())) {
-                if (existing != null) existing.remove();
-                retained.put(soulId, skeleton);
-            } else skeleton.remove();
+            if (!fractured.containsKey(soulId)) skeleton.remove();
         }
+        for(String soulId:new ArrayList<>(fractured.keySet()))reconcileLoaded(soulId);
     }
 
     private void spawn(String soulId, FracturedRecord old) {
+        if (!spawning.add(soulId)) return;
+        try {
+        if (plugin.souls().byId(soulId).map(DragonSoul::state).orElse(null) != DragonSoulState.FRACTURED
+                || fractured.get(soulId) != old) return;
         Location location = old.location();
         if (location == null || location.getWorld() == null) return;
+        location.getChunk().load();
+        WitherSkeleton existing = reconcileLoaded(soulId);
+        if (existing != null) {
+            ensureBar(soulId, existing);
+            updateBar(soulId, existing, true);
+            persist();
+            return;
+        }
         location = safeLocation(location).orElse(location.clone().add(0, 1, 0));
         WitherSkeleton mob = location.getWorld().spawn(location, WitherSkeleton.class, spawned -> {
             spawned.customName(Component.text("Fractured " + SoulIdentity.displayName(soulId), NamedTextColor.DARK_RED));
@@ -248,6 +273,9 @@ public final class SoulConsequenceService implements Listener {
         ensureBar(soulId, mob);
         updateBar(soulId, mob, true);
         persist();
+        } finally {
+            spawning.remove(soulId);
+        }
     }
 
     private void teleport(String soulId, WitherSkeleton mob) {
@@ -324,6 +352,21 @@ public final class SoulConsequenceService implements Listener {
         bars.values().forEach(event.getPlayer()::showBossBar);
     }
 
+    @EventHandler
+    public void chunkLoad(ChunkLoadEvent event) {
+        Set<String> loadedSoulIds = new HashSet<>();
+        for (Entity entity : event.getChunk().getEntities())
+            if (entity instanceof WitherSkeleton skeleton && soulId(skeleton) != null)
+                loadedSoulIds.add(soulId(skeleton));
+        for (String soulId : loadedSoulIds) {
+            WitherSkeleton canonical = reconcileLoaded(soulId);
+            if (canonical != null) {
+                ensureBar(soulId, canonical);
+                updateBar(soulId, canonical, true);
+            }
+        }
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void preventBoundKillingBlow(EntityDamageByEntityEvent event) {
         if (!(event.getEntity() instanceof WitherSkeleton mob) || soulId(mob) == null) return;
@@ -341,6 +384,12 @@ public final class SoulConsequenceService implements Listener {
         if (soulId == null) return;
         event.getDrops().clear();
         event.setDroppedExp(0);
+        FracturedRecord tracked = fractured.get(soulId);
+        if (tracked == null || tracked.entityId() != null && !tracked.entityId().equals(mob.getUniqueId())) {
+            plugin.audit().record("FRACTURED_DUPLICATE_DEATH_IGNORED", "SYSTEM",
+                    soulId + " entity=" + mob.getUniqueId());
+            return;
+        }
         Player killer = mob.getKiller();
         removeBar(soulId);
         fractured.remove(soulId);
@@ -374,10 +423,15 @@ public final class SoulConsequenceService implements Listener {
     }
 
     private void respawnLater(String soulId) {
+        if (!respawnsScheduled.add(soulId)) return;
         Bukkit.getScheduler().runTask(plugin, () -> {
-            FracturedRecord record = fractured.get(soulId);
-            if (record != null && plugin.souls().byId(soulId).map(DragonSoul::state).orElse(null) == DragonSoulState.FRACTURED)
-                spawn(soulId, record);
+            try {
+                FracturedRecord record = fractured.get(soulId);
+                if (record != null && plugin.souls().byId(soulId).map(DragonSoul::state).orElse(null) == DragonSoulState.FRACTURED)
+                    spawn(soulId, record);
+            } finally {
+                respawnsScheduled.remove(soulId);
+            }
         });
     }
 
@@ -404,6 +458,45 @@ public final class SoulConsequenceService implements Listener {
         for (World world : Bukkit.getWorlds()) for (Entity entity : world.getEntities())
             if (entity instanceof WitherSkeleton skeleton && soulId.equals(soulId(skeleton))) return skeleton;
         return null;
+    }
+
+    private WitherSkeleton reconcileLoaded(String soulId) {
+        FracturedRecord record = fractured.get(soulId);
+        List<WitherSkeleton> candidates = new ArrayList<>();
+        for (World world : Bukkit.getWorlds()) for (Entity entity : world.getEntities())
+            if (entity instanceof WitherSkeleton skeleton && soulId.equals(soulId(skeleton)))
+                candidates.add(skeleton);
+        if (record == null) {
+            candidates.forEach(Entity::remove);
+            return null;
+        }
+        WitherSkeleton tracked = entity(record.entityId());
+        if (FracturedSoulRules.waitForTrackedChunk(record.entityId(), tracked != null, trackedChunkLoaded(record))) {
+            int removed=candidates.size();
+            candidates.forEach(Entity::remove);
+            if(removed>0)plugin.audit().record("FRACTURED_DUPLICATES_REMOVED","SYSTEM",
+                    soulId+" removed="+removed+" while canonical chunk unloaded");
+            return null;
+        }
+        UUID canonicalId=FracturedSoulRules.canonical(record.entityId(),
+                candidates.stream().map(Entity::getUniqueId).toList());
+        WitherSkeleton canonical=candidates.stream()
+                .filter(candidate->candidate.getUniqueId().equals(canonicalId)).findFirst().orElse(null);
+        int removed=0;
+        for(WitherSkeleton candidate:candidates)if(candidate!=canonical){candidate.remove();removed++;}
+        if(removed>0)plugin.audit().record("FRACTURED_DUPLICATES_REMOVED","SYSTEM",
+                soulId+" kept="+canonicalId+" removed="+removed);
+        if(canonical!=null&&!canonical.getUniqueId().equals(record.entityId())){
+            fractured.put(soulId,new FracturedRecord(canonical.getUniqueId(),canonical.getLocation(),record.nextTeleport()));
+            persist();
+        }
+        return canonical;
+    }
+
+    private boolean trackedChunkLoaded(FracturedRecord record) {
+        Location location=record.location();
+        if(location==null||location.getWorld()==null)return true;
+        return location.getWorld().isChunkLoaded(location.getBlockX()>>4,location.getBlockZ()>>4);
     }
 
     private long nextTeleportAt() {

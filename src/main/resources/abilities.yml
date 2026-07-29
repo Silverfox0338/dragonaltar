@@ -233,6 +233,13 @@ abilities:
 ultimate:
   shared-cooldown-seconds: 120
 rev-hunt:
+  heat-bar:
+    enabled: true
+    title: '<red><bold>REV HEAT</bold></red> <gray><heat>/<maximum> | <tier></gray>'
+    stalking-color: YELLOW
+    pursuing-color: RED
+    predator-color: PURPLE
+    overlay: PROGRESS
   heat:
     maximum: 100
     damage-marked-gain: 4

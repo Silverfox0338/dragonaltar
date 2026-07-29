@@ -23,7 +23,7 @@ public abstract class ConfiguredAbility implements DragonAbility {
         this.id = id;
         this.fallbackName = fallbackName;
         this.category = category;
-        this.souls = Set.copyOf(souls);
+        this.souls = souls.isEmpty() ? Set.of(SoulIdentity.values()) : Set.copyOf(souls);
         this.ultimate = ultimate;
     }
 
