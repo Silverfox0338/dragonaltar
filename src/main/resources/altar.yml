@@ -1,0 +1,61 @@
+# Staff-recorded locations only. Runtime altar state is stored in data/altar-state.yml.
+config-version: 2
+existing-structure: true
+schematic:
+  enabled: false
+  required-for-event: false
+internal-protection:
+  enabled: false
+  required-for-event: false
+world: ''
+# Locations remain empty until committed by /dragon setup save.
+altar-center: {}
+ritual-center: {}
+egg-display: {}
+interaction: {}
+arrival: {}
+fountain: {}
+crystals: {}
+pedestals: {}
+protection:
+  # Inclusive cuboid corners. Bypass is a permission-gated per-player toggle.
+  enabled: false
+  pos1: {}
+  pos2: {}
+display:
+  # This is rendered as a BlockDisplay; no obtainable egg block is placed.
+  material: DRAGON_EGG
+  glow: true
+  glow-color: 'AA00AA'
+  bob-height: 0.20
+  scale-pulse-amplitude: 0.08
+  rotation-degrees-per-tick: 2.0
+  idle-particle: DRAGON_BREATH
+  idle-particle-count: 2
+  idle-particle-interval-ticks: 10
+  ambient-sound: 'minecraft:block.beacon.ambient'
+  ambient-sound-interval-ticks: 200
+  heartbeat-sound: 'minecraft:entity.warden.heartbeat'
+  heartbeat-interval-ticks: 100
+recipe-display:
+  enabled: true
+  offset:
+    x: 0.0
+    y: 1.8
+    z: 0.0
+  billboard: CENTER
+  shadowed: true
+  see-through: false
+  line-width: 220
+  view-range: 32.0
+  lines:
+    - '<gradient:#b84cff:#6f20ff><bold>✦ DRAGONBORN RITUAL ✦</bold></gradient>'
+    - ''
+    - '<white>1× <light_purple>Elytra</light_purple>'
+    - '<white>1× <light_purple>Nether Star</light_purple>'
+    - '<white>16× <light_purple>Dragon''s Breath</light_purple>'
+    - '<white>8× <light_purple>End Crystals</light_purple>'
+    - '<white>4× <light_purple>Echo Shards</light_purple>'
+    - ''
+    - '<gray>Right-click the altar to begin.</gray>'
+    - '<dark_purple>%remaining_souls% Dragon Souls remain.</dark_purple>'

@@ -1,0 +1,63 @@
+name: DragonAltar
+version: '${project.version}'
+main: com.dragonaltar.DragonAltarPlugin
+api-version: '1.21'
+description: Persistent Dragonborn souls, rituals, abilities, and an Ancient Dragon storyline
+authors: [DragonAltar]
+softdepend: [PlaceholderAPI, WorldEdit, ScaledEnderDragon]
+commands:
+  dragon:
+    description: DragonAltar command
+    usage: /dragon help
+    aliases: [dragonaltar]
+permissions:
+  dragonaltar.use:
+    default: true
+    description: Use player commands, Focus controls, and altar rituals
+  dragonaltar.admin:
+    default: op
+    description: Administrative command and GUI access
+    children:
+      dragonaltar.admin.event: true
+      dragonaltar.admin.altar: true
+      dragonaltar.admin.ritual: true
+      dragonaltar.admin.souls: true
+      dragonaltar.admin.abilities: true
+      dragonaltar.admin.protection: true
+      dragonaltar.admin.system: true
+  dragonaltar.admin.event:
+    default: op
+    description: Manage the Ancient Dragon event
+  dragonaltar.admin.altar:
+    default: op
+    description: Manage altar state and displays
+  dragonaltar.admin.ritual:
+    default: op
+    description: Inspect and manage active rituals
+  dragonaltar.admin.souls:
+    default: op
+    description: Inspect and manage Dragon Soul ownership
+  dragonaltar.admin.abilities:
+    default: op
+    description: Inspect and manage abilities, energy, and cooldowns
+  dragonaltar.admin.protection:
+    default: op
+    description: Configure optional altar protection
+  dragonaltar.admin.system:
+    default: op
+    description: Validate, reload, save, and inspect plugin services
+  dragonaltar.setup:
+    default: op
+    description: Create and commit guided altar setup sessions
+  dragonaltar.developer:
+    default: op
+    description: Beta diagnostics, simulations, repairs, backup, and resets
+  dragonaltar.protection.bypass:
+    default: op
+    description: Toggle a personal altar-protection bypass
+  dragonaltar.eligibility.required:
+    default: true
+    description: Optional default eligibility permission
+  dragonaltar.eligibility.excluded:
+    default: false
+    description: Excludes a player from rituals and soul selection

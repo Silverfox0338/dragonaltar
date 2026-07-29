@@ -1,0 +1,2 @@
+package com.dragonaltar.ritual;
+public enum RitualPhase { OFFERINGS_ACCEPTED, ALTAR_CHARGING, SOUL_AWAKENING, PLAYER_BINDING, ASCENSION, COMPLETION }

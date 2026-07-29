@@ -1,0 +1,38 @@
+config-version: 1
+# Typed, ordered animation steps. Invalid types are logged and skipped.
+altar-awaken:
+  - {at-tick: 0, type: SOUND, sound: 'minecraft:entity.ender_dragon.growl', volume: 2, pitch: 0.7}
+  - {at-tick: 10, type: PARTICLE_RING, particle: PORTAL, count: 100}
+  - {at-tick: 40, type: LIGHTNING_EFFECT}
+egg-deplete:
+  - {at-tick: 0, type: PARTICLE_SPIRAL, particle: DRAGON_BREATH, count: 80}
+  - {at-tick: 30, type: DISPLAY_SCALE, scale: 0}
+pvp-transfer:
+  - {at-tick: 0, type: SOUND, sound: 'minecraft:entity.ender_dragon.growl', volume: 1.5, pitch: 1}
+  - {at-tick: 20, type: TEMPORARY_WINGS, duration: 80}
+  - {at-tick: 100, type: WAIT}
+egg-idle:
+  - {at-tick: 0, type: PARTICLE_RING, particle: PORTAL, count: 24}
+egg-claim:
+  - {at-tick: 0, type: SOUND, sound: 'minecraft:block.amethyst_block.chime', volume: 1, pitch: 0.8}
+  - {at-tick: 5, type: PARTICLE_SPIRAL, particle: DRAGON_BREATH, count: 60}
+soul-depart:
+  - {at-tick: 0, type: PARTICLE_SPIRAL, particle: SOUL_FIRE_FLAME, count: 50}
+soul-arrive:
+  - {at-tick: 0, type: LIGHTNING_EFFECT}
+  - {at-tick: 1, type: PARTICLE_RING, particle: DRAGON_BREATH, count: 80}
+natural-transfer:
+  - {at-tick: 0, type: PARTICLE_SPIRAL, particle: SOUL, count: 50}
+  - {at-tick: 20, type: TEMPORARY_WINGS}
+ritual-start:
+  - {at-tick: 0, type: SOUND, sound: 'minecraft:block.beacon.activate', volume: 1, pitch: 0.7}
+  - {at-tick: 1, type: PLAYER_LEVITATE, duration: 40}
+  - {at-tick: 10, type: PARTICLE_RING, particle: ENCHANT, count: 80}
+ritual-egg:
+  - {at-tick: 0, type: DISPLAY_MOVE, y: 0.5, duration: 20}
+  - {at-tick: 20, type: DISPLAY_ROTATE, degrees: 180, duration: 40}
+  - {at-tick: 60, type: DISPLAY_MOVE, y: 0, duration: 20}
+ritual-complete:
+  - {at-tick: 0, type: LIGHTNING_EFFECT}
+  - {at-tick: 1, type: SOUND, sound: 'minecraft:entity.ender_dragon.growl', volume: 1.5, pitch: 1.2}
+  - {at-tick: 10, type: TEMPORARY_WINGS, duration: 40}

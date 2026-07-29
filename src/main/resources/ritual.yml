@@ -1,0 +1,53 @@
+# Initial-soul ritual. All phase durations are server ticks.
+config-version: 2
+# INVENTORY_CONSUME, PEDESTAL_DEPOSIT, or HYBRID.
+offering-mode: INVENTORY_CONSUME
+offerings:
+  - id: elytra
+    material: ELYTRA
+    amount: 1
+    durability-mode: ANY
+    display-name: '<light_purple>Elytra</light_purple>'
+  - material: NETHER_STAR
+    id: nether-star
+    amount: 1
+    display-name: '<light_purple>Nether Star</light_purple>'
+  - id: dragon-breath
+    material: DRAGON_BREATH
+    amount: 16
+    display-name: '<light_purple>Dragon''s Breath</light_purple>'
+  - id: end-crystals
+    material: END_CRYSTAL
+    amount: 8
+    display-name: '<light_purple>End Crystals</light_purple>'
+  - id: echo-shards
+    material: ECHO_SHARD
+    amount: 4
+    display-name: '<light_purple>Echo Shards</light_purple>'
+elytra:
+  accept-any-durability: true
+  accept-enchanted: true
+  accept-renamed: true
+  accept-custom-lore: true
+  include-equipped-chest-slot: false
+  consumption-priority: MOST_DAMAGED
+  blocked-pdc-keys: []
+phases:
+  OFFERINGS_ACCEPTED: 40
+  ALTAR_CHARGING: 100
+  SOUL_AWAKENING: 80
+  PLAYER_BINDING: 60
+  ASCENSION: 60
+  COMPLETION: 40
+refund-on-cancel: true
+restrict-movement: true
+ritual-radius: 8.0
+failure:
+  cancel-on-damage: true
+cinematic:
+  boss-bar: true
+  boss-bar-title: 'Dragon Ritual: {phase}'
+  boss-bar-color: PURPLE
+  titles: true
+  particle: DRAGON_BREATH
+  particle-count: 30

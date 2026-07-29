@@ -1,0 +1,51 @@
+# Maven
+target/
+dependency-reduced-pom.xml
+
+# IDEs and editors
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# Runtime Paper server files
+plugins/
+world/
+world_nether/
+world_the_end/
+logs/
+cache/
+libraries/
+versions/
+server.properties
+bukkit.yml
+spigot.yml
+paper*.yml
+commands.yml
+permissions.yml
+eula.txt
+*.log
+
+# DragonAltar generated data and operations
+data/
+backups/
+schematics/
+*.tmp
+
+# Local archives and secrets
+*.zip
+*.tar
+*.tar.gz
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# Operating systems
+.DS_Store
+Thumbs.db

@@ -1,0 +1,6 @@
+package com.dragonaltar.dragonevent;
+
+public enum DragonEventState {
+    NOT_STARTED, PREPARING, SUMMONING, ACTIVE, DEATH_SEQUENCE, DEFEATED,
+    ALTAR_AWAKENING, ALTAR_ACTIVE, COMPLETED, ABORTED, RECOVERY_REQUIRED
+}

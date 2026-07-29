@@ -1,0 +1,43 @@
+# DragonAltar general configuration. Runtime state is stored under data/.
+config-version: 2
+server-mode: BETA
+safety:
+  # Operators do not bypass this gate.
+  allow-destructive-commands-in-production: false
+event:
+  # Confirmation and cinematic timings are configurable.
+  end-world: world_the_end
+  nearby-player-radius: 128
+  confirmation-seconds: 30
+  scaled-dragon-reward-delay-ticks: 40
+  altar-awakening-delay-ticks: 80
+eligibility:
+  # All ritual and reincarnation selection uses these same checks.
+  allowed-game-modes: [SURVIVAL, ADVENTURE]
+  minimum-playtime-ticks: 0
+  required-permission: ''
+  exclusion-permission: dragonaltar.eligibility.excluded
+  recently-joined-grace-seconds: 0
+transfer:
+  # RANDOM_ELIGIBLE, OPEN_RITUAL_SLOT, SOUL_DORMANT, or PENDING_TRANSFER.
+  natural-death-countdown-seconds: 10
+  dragonborn-killer-policy: RANDOM_ELIGIBLE
+  combat-tag-seconds: 15
+instability:
+  # The counter is intentionally not exposed in player-facing commands.
+  threshold: 6
+  fracture-chance: 0.20
+  teleport-min-seconds: 45
+  teleport-max-seconds: 60
+  teleport-radius: 32
+  bossbar-coordinate-update-seconds: 7
+forced-removal-ritual:
+  # Put 128 Phantom Membranes, 4 Potions of Weakness, 1 Nether Star,
+  # and 1 Netherite Block in the completed player-built altar chest.
+  participant-count: 4
+  selection-timeout-seconds: 60
+  animation-duration-ticks: 160
+  backfire-limbo-hours: 12
+developer:
+  # Developer commands additionally require dragonaltar.developer.
+  enabled-in-beta: true
