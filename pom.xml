@@ -4,9 +4,16 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.dragonaltar</groupId>
   <artifactId>dragonaltar</artifactId>
-  <version>1.4.17</version>
+  <version>1.4.18</version>
   <name>DragonAltar</name>
   <description>Persistent Dragonborn souls, rituals, abilities, and an Ancient Dragon storyline for Paper.</description>
+  <licenses>
+    <license>
+      <name>DragonAltar Noncommercial License</name>
+      <url>LICENSE.md</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -36,6 +43,11 @@
   <build>
     <finalName>DragonAltar-${project.version}</finalName>
     <resources>
+      <resource>
+        <directory>${project.basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes><include>LICENSE.md</include></includes>
+      </resource>
       <resource>
         <directory>src/main/resources</directory>
         <filtering>false</filtering>

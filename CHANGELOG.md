@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.18 - 2026-07-29
+
+- Added the DragonAltar noncommercial license and a separate permission for free
+  independent add-ons with required Silverfox0338 ownership credit.
+- Added API 2.0 immutable soul, event, ritual, eligibility, ability, cooldown, and
+  player-action views.
+- Redacted private staff custody from public API snapshots and retired raw soul
+  access that could expose hidden lineage.
+- Added namespaced custom ability registration with energy, cooldown, soul, and
+  server-thread validation.
+- Added automatic add-on cleanup on plugin disable and contained failures from
+  third-party ability callbacks.
+- Added a complete Maven and Bukkit add-on example.
+
 ## 1.4.17 - 2026-07-29
 
 - Removed administrative and developer holders from every player-facing soul-history field.

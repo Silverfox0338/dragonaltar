@@ -239,6 +239,24 @@ public final class AbilityService {
         registerResonance(new DragonTrinity(this));
     }
     private void register(DragonAbility ability){registry.put(ability.id(),ability);}
+    /**
+     * Public API bridge. Add-ons should call DragonAltarApi rather than this
+     * implementation method.
+     */
+    public void registerExternal(DragonAbility ability) {
+        Objects.requireNonNull(ability, "ability");
+        if (registry.containsKey(ability.id()))
+            throw new IllegalArgumentException("Ability id is already registered: " + ability.id());
+        registry.put(ability.id(), ability);
+    }
+
+    /**
+     * Removes only the supplied external ids. Built-in ids are never supplied by
+     * the public API registry.
+     */
+    public void unregisterExternal(Collection<String> abilityIds) {
+        abilityIds.forEach(registry::remove);
+    }
     private void registerResonance(DragonAbility ability){
         resonances.register(ability.id());
         register(ability);

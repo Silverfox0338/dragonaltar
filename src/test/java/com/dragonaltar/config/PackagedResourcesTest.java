@@ -29,6 +29,16 @@ class PackagedResourcesTest {
         for(String name:CONFIGS)assertNoLongDash(load(name).getValues(true),name);
     }
 
+    @Test
+    void jarContainsTheLicenseAndOwnerNotice() throws Exception {
+        try(InputStream stream=PackagedResourcesTest.class.getClassLoader().getResourceAsStream("META-INF/LICENSE.md")){
+            assertNotNull(stream,"LICENSE.md must be packaged");
+            String text=new String(stream.readAllBytes(),StandardCharsets.UTF_8);
+            assertTrue(text.contains("DragonAltar is owned by Silverfox0338."));
+            assertTrue(text.contains("paid features"));
+        }
+    }
+
     private static void assertNoLongDash(Map<String,Object> values,String name){
         for(var entry:values.entrySet()){
             if(entry.getValue() instanceof String text)

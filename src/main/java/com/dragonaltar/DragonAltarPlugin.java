@@ -48,7 +48,7 @@ public final class DragonAltarPlugin extends JavaPlugin {
     private ConfigService configs; private ConfigValidator validator; private MessageService messages; private YamlDataStore store; private AuditService audit; private DragonSoulService souls;
     private DragonbornService dragonborn; private AbilityService abilities; private AnimationService animations; private EligibilityService eligibility; private PlayerDataService players; private CombatTagService combatTags;
     private ScaledEnderDragonIntegration scaledDragon;
-    private DragonEventManager dragonEvent; private RitualManager rituals; private SoulConsequenceService consequences; private com.dragonaltar.ritual.DragonbornRemovalRitual removalRitual; private DisplayManager displays; private AltarSetupService setup; private AdminGui adminGui; private AbilityMenu abilityMenu;private RitualMenu ritualMenu;private SettingsMenu settingsMenu;private HelpMenu helpMenu;private SoulHistoryMenu soulHistoryMenu; private ConfirmationService confirmations; private final Set<UUID> bypass = new HashSet<>();private boolean runtimeTasksStarted;
+    private DragonEventManager dragonEvent; private RitualManager rituals; private SoulConsequenceService consequences; private com.dragonaltar.ritual.DragonbornRemovalRitual removalRitual; private DisplayManager displays; private AltarSetupService setup; private AdminGui adminGui; private AbilityMenu abilityMenu;private RitualMenu ritualMenu;private SettingsMenu settingsMenu;private HelpMenu helpMenu;private SoulHistoryMenu soulHistoryMenu; private ConfirmationService confirmations; private DragonAltarApiImpl publicApi; private final Set<UUID> bypass = new HashSet<>();private boolean runtimeTasksStarted;
     @Override public void onEnable() {
         try {
             configs=new ConfigService(this); configs.load();validator=new ConfigValidator(configs);messages=new MessageService(configs); store=new YamlDataStore(this); store.initialize(); audit=new AuditService(this);
@@ -77,7 +77,9 @@ public final class DragonAltarPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(settingsMenu,this);
             getServer().getPluginManager().registerEvents(helpMenu,this);
             getServer().getPluginManager().registerEvents(soulHistoryMenu,this);
-            getServer().getServicesManager().register(DragonAltarApi.class,new DragonAltarApiImpl(this),this,org.bukkit.plugin.ServicePriority.Normal);
+            publicApi=new DragonAltarApiImpl(this);
+            getServer().getPluginManager().registerEvents(publicApi,this);
+            getServer().getServicesManager().register(DragonAltarApi.class,publicApi,this,org.bukkit.plugin.ServicePriority.Normal);
             if(getServer().getPluginManager().isPluginEnabled("PlaceholderAPI"))new PlaceholderApiIntegration(this).register();
             if(validateSetup().equals("Valid")||souls.all().stream().anyMatch(s->s.holder()!=null))ensureRuntimeTasks();integrations().forEach(x->getLogger().info(x+" detected."));
             if(integrations().contains("ScaledEnderDragon")) getLogger().warning("DragonAltar uses vanilla respawning so ScaledEnderDragon can scale it. Remove dragon egg rewards from its rewards.yml.");
@@ -90,6 +92,7 @@ public final class DragonAltarPlugin extends JavaPlugin {
         } catch(Exception e) { getLogger().log(java.util.logging.Level.SEVERE,"DragonAltar failed to enable",e); getServer().getPluginManager().disablePlugin(this); }
     }
     @Override public void onDisable(){
+        getServer().getServicesManager().unregisterAll(this);
         if(removalRitual!=null)removalRitual.stop();
         if(rituals!=null)rituals.stop();
         if(animations!=null)animations.stopAll();

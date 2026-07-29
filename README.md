@@ -2,7 +2,7 @@
 
 DragonAltar is a Paper plugin for an SMP-wide Ancient Dragon storyline. It runs a protected vanilla Ender Dragon respawn ritual, awakens a configured altar, creates exactly three persistent Dragon Souls, and keeps Akuma, Rev, and Lamari circulating through rituals, inheritance, recovery, and reincarnation.
 
-DragonAltar 1.4.17 targets Paper 1.21.4 and Java 21.
+DragonAltar 1.4.18 targets Paper 1.21.4 and Java 21.
 
 ## Highlights
 
@@ -40,7 +40,7 @@ Paper and optional plugin APIs are provided dependencies and are not bundled in 
 ## Installation
 
 1. Stop the Paper server.
-2. Copy `DragonAltar-1.4.17.jar` into the server's `plugins` directory.
+2. Copy `DragonAltar-1.4.18.jar` into the server's `plugins` directory.
 3. Start the server once to create configuration and data directories.
 4. Review `plugins/DragonAltar/config.yml` and the other generated YAML files.
 5. Run `/dragon setup begin` and record the altar, interaction, ritual, arrival, fountain, and crystal locations.
@@ -109,7 +109,9 @@ WorldEdit is optional. DragonAltar does not require it for setup or event valida
 
 ScaledEnderDragon is detected by plugin name. DragonAltar starts the real vanilla respawn sequence and leaves scaling, combat, and rewards to the integration. Remove obtainable dragon egg rewards from ScaledEnderDragon's rewards configuration.
 
-See [API.md](API.md) for the Bukkit service and events.
+See [API.md](API.md) for the Bukkit service, immutable state queries, events, and
+custom ability hooks. [ADDON-DEVELOPMENT.md](ADDON-DEVELOPMENT.md) contains a
+complete starter add-on.
 
 ## Building
 
@@ -117,7 +119,15 @@ See [API.md](API.md) for the Bukkit service and events.
 mvn clean package
 ```
 
-The release JAR is written to `target/DragonAltar-1.4.17.jar`. Maven compiles with `--release 21`, runs the JUnit suite, filters only `plugin.yml`, and produces deterministic archive timestamps.
+The release JAR is written to `target/DragonAltar-1.4.18.jar`. Maven compiles with `--release 21`, runs the JUnit suite, filters only `plugin.yml`, and produces deterministic archive timestamps.
+
+## License and add-ons
+
+DragonAltar is source-available under the noncommercial terms in
+[LICENSE.md](LICENSE.md). Independent add-ons may use the published API when the
+add-on and all of its DragonAltar features remain free and the required
+Silverfox0338 ownership notice is displayed. Paid, premium, subscription, and
+paywalled DragonAltar features require separate written permission.
 
 ## Data and privacy
 
@@ -141,8 +151,6 @@ Remove player-identifying data and secrets before sharing logs or data files.
 ## Known limitations and release gates
 
 - A live Paper server is required to verify fountain recognition, respawn beams, display interpolation, inventory behavior, chunk transitions, integrations, shutdown cleanup, and multiplayer performance.
-- No license is present. Public distribution remains legally blocked until the owner selects and adds the intended license.
 - No project, source, support, donation, or issue-tracker URL is established.
-- This repository snapshot is not a Git worktree, so commit history and source provenance cannot be verified here.
 
 See [RELEASE-NOTES.md](RELEASE-NOTES.md), [CHANGELOG.md](CHANGELOG.md), [RELEASE-VERIFICATION.md](RELEASE-VERIFICATION.md), [BETA-TESTING.md](BETA-TESTING.md), and [RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md).
