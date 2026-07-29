@@ -49,6 +49,8 @@ The default ability configuration keeps Dragon Energy at 100, bounds Rev marks a
 
 `focus.blocked-command-prefixes` blocks held-item sale commands such as `/ah sell`. `focus.blocked-inventory-command-prefixes` blocks bulk commands such as `/sellall` whenever a Focus is present. Focus items are owner-bound, cannot enter external inventories, and duplicate or escaped copies are removed automatically.
 
+`rev-hunt.heat-bar` controls Rev's dedicated Heat boss bar. The bar shows the current value, maximum, and Stalking, Pursuing, or Predator tier. Its three tier colors, title, overlay, and enabled state are configurable. Players who disable their HUD also hide the Heat bar.
+
 ## Migration behavior
 
 On startup DragonAltar:

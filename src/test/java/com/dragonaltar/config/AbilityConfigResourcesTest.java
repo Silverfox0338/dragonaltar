@@ -21,6 +21,8 @@ class AbilityConfigResourcesTest {
         assertTrue(abilities.getInt("abilities.infernos-wrath.maximum-mobility-ticks")
                 >=abilities.getInt("abilities.infernos-wrath.initial-mobility-ticks"));
         assertEquals(100,abilities.getInt("rev-hunt.heat.maximum"));
+        assertTrue(abilities.getBoolean("rev-hunt.heat-bar.enabled"));
+        assertTrue(abilities.getString("rev-hunt.heat-bar.title","").contains("<heat>"));
         assertTrue(abilities.getInt("abilities.revs-rend.recast-window-ticks")>0);
         assertTrue(abilities.getInt("abilities.infernos-wrath.maximum-rampage")>0);
         assertTrue(abilities.getDouble("abilities.titans-bulwark.stored-damage-cap")>0);

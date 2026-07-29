@@ -11,6 +11,7 @@ import com.dragonaltar.ability.resonance.GlacialBastion;
 import com.dragonaltar.ability.resonance.ThermalConvergence;
 import com.dragonaltar.ability.resonance.VolcanicAegis;
 import com.dragonaltar.ability.rev.InfernosWrath;
+import com.dragonaltar.ability.rev.RevHeatBarManager;
 import com.dragonaltar.ability.rev.RevsRend;
 import com.dragonaltar.ability.rev.WrathOfRev;
 import com.dragonaltar.ability.shared.Roar;
@@ -62,6 +63,7 @@ public final class AbilityService {
     private final BulwarkTracker bulwarks = new BulwarkTracker();
     private final AbilityCombatRules.BrittleTracker brittle=new AbilityCombatRules.BrittleTracker();
     private final AbilityCombatRules.RevHuntTracker revHunt=new AbilityCombatRules.RevHuntTracker();
+    private final RevHeatBarManager revHeatBars;
     private final AbilityCombatRules.ReflectionGuard reflectionGuard=new AbilityCombatRules.ReflectionGuard();
     private boolean suppressCombatInteractions;
     private BukkitTask task;
@@ -73,6 +75,7 @@ public final class AbilityService {
         this.selections = new AbilitySelectionManager(players);
         this.cooldowns = new AbilityCooldownTracker(players);
         this.displays = new AbilityDisplayTracker(plugin, players);
+        this.revHeatBars = new RevHeatBarManager(config);
         this.resonanceCoordinator = new AbilityResonanceCoordinator(plugin, dragonborn, config, resonances,
                 player -> playAccessibleSound(player.getLocation(),Sound.BLOCK_BEACON_ACTIVATE,.8f,1.35f));
         registerDefaults();
@@ -94,6 +97,9 @@ public final class AbilityService {
                             integerRoot("rev-hunt.heat.decay-interval-ticks",20)*50L,
                             integerRoot("rev-hunt.heat.decay-amount",2));
                     showRevTracking(p,System.currentTimeMillis());
+                    updateRevHeatBar(p);
+                }else{
+                    revHeatBars.hide(p);
                 }
                 if(current(p)<max&&energy.regenerationAllowed(p.getUniqueId(),System.currentTimeMillis()))energy.set(p,Math.min(max,current(p)+regen),false);
                 String selectedId=selected(p);DragonAbility selectedAbility=registry.get(selectedId);
@@ -122,6 +128,7 @@ public final class AbilityService {
         displays.removeAll();
         temporaryFlight.restoreAll();
         brittle.clear();revHunt.clear();bulwarks.clear();resonances.clear();
+        revHeatBars.hideAll();
         energy.persistAllAndClear();
         selections.clear();
         cooldowns.clear();
@@ -205,9 +212,10 @@ public final class AbilityService {
         energy.persistAndRemove(id);
         temporaryFlight.restoreOnLogout(player);
         selections.remove(id);cooldowns.remove(id);bulwarks.remove(id);resonances.remove(id);resetCombatState(player);
+        revHeatBars.hide(player);
     }
-    public void clearCaches(){energy.clear();selections.clear();cooldowns.clear();brittle.clear();revHunt.clear();bulwarks.clear();resonances.clear();}
-    public void resetCombatState(Player player){revHunt.reset(player.getUniqueId());}
+    public void clearCaches(){energy.clear();selections.clear();cooldowns.clear();brittle.clear();revHunt.clear();bulwarks.clear();resonances.clear();revHeatBars.hideAll();}
+    public void resetCombatState(Player player){revHunt.reset(player.getUniqueId());updateRevHeatBar(player);}
     private boolean supports(Player player,DragonAbility ability){
         if(!dragonborn.soul(player).map(ability::supports).orElse(false))return false;
         return !resonances.isResonance(ability.id())||resonanceCoordinator.current(player).map(value->value.id().equals(ability.id())).orElse(false);
@@ -434,6 +442,7 @@ public final class AbilityService {
         playConfiguredSound(player.getLocation(),"revs-rend.sounds.recast-surge",Sound.ENTITY_BLAZE_SHOOT,.9f,1.15f);
         boolean claim=revHunt.consumeFinisher(player.getUniqueId(),now,true,
                 config.file("abilities.yml").getBoolean("rev-hunt.finisher.reset-heat-on-consume",true));
+        updateRevHeatBar(player);
         if(claim){
             dealAbilityDamage(target,Math.min(8,decimal("revs-rend.predators-claim-damage",6)),player);
             target.setVelocity(target.getVelocity().add(new Vector(0,decimal("revs-rend.predators-claim-lift",.22),0)));
@@ -1332,6 +1341,7 @@ public final class AbilityService {
                 target instanceof Player?integerRoot("rev-hunt.heat.maximum-gains-per-player",20)
                         :integerRoot("rev-hunt.heat.maximum-gains-per-mob",3));
         if(!gain.granted())return;
+        updateRevHeatBar(rev);
         int mobilityThreshold=integerRoot("rev-hunt.heat.mobility-threshold",35);
         int trackingThreshold=integerRoot("rev-hunt.heat.tracking-threshold",65);
         if(previous<mobilityThreshold&&gain.heat()>=mobilityThreshold){
@@ -1463,6 +1473,16 @@ public final class AbilityService {
         if(heat>=integerRoot("rev-hunt.heat.tracking-threshold",65))return "Predator";
         if(heat>=integerRoot("rev-hunt.heat.mobility-threshold",35))return "Pursuing";
         return "Stalking";
+    }
+
+    private void updateRevHeatBar(Player player){
+        boolean visible=player.isOnline()&&dragonborn.hasSoul(player,SoulIdentity.REV)
+                &&config.file("abilities.yml").getBoolean("rev-hunt.heat-bar.enabled",true)
+                &&players.settings(player.getUniqueId()).hud();
+        revHeatBars.update(player,revHunt.heat(player.getUniqueId()),
+                integerRoot("rev-hunt.heat.maximum",100),
+                integerRoot("rev-hunt.heat.mobility-threshold",35),
+                integerRoot("rev-hunt.heat.tracking-threshold",65),visible);
     }
 
     private void showTitle(Player player,String title,String subtitle){
