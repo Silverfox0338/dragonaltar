@@ -47,7 +47,8 @@ public final class DragonCommand implements TabExecutor {
                 case "cancel" -> {cancelDanger(sender);yield true;}
                 default -> { help(sender); yield true; }
             };
-        } catch (IllegalArgumentException | IllegalStateException ex) {plugin.messages().send(sender,"command-error","message",ex.getMessage()==null?"Unknown error":ex.getMessage());return true;}
+        } catch (PlayerOnlyCommandException ignored) {return true;}
+        catch (IllegalArgumentException | IllegalStateException ex) {plugin.messages().send(sender,"command-error","message",ex.getMessage()==null?"Unknown error":ex.getMessage());return true;}
     }
     private boolean event(CommandSender s, String[] a) {
         require(s,"dragonaltar.admin.event");
@@ -155,8 +156,8 @@ public final class DragonCommand implements TabExecutor {
         String sub=a.length>1?a[1]:"status";
         if(sub.equals("bypass")) { Player p=player(s); require(s,"dragonaltar.protection.bypass"); plugin.toggleBypass(p); return true; }
         require(s,"dragonaltar.admin.protection");
-        if(sub.equals("enable"))plugin.setAltarValue("protection.enabled",true);
-        else if(sub.equals("disable")){danger(s,"protection-disable",List.of(),()->plugin.setAltarValue("protection.enabled",false));return true;}
+        if(sub.equals("enable"))plugin.setAltarValue("internal-protection.enabled",true);
+        else if(sub.equals("disable")){danger(s,"protection-disable",List.of(),()->plugin.setAltarValue("internal-protection.enabled",false));return true;}
         else if(sub.equals("setpos1")||sub.equals("setpos2")){Location target=player(s).getLocation().clone();danger(s,"protection-"+sub,List.of(formatLocation(target)),()->plugin.saveLocation("altar.yml","protection."+sub.substring(3),target));}
         else if(sub.equals("visualize")){Player p=player(s);Location a1=plugin.configuredLocation("altar.yml","protection.pos1"),a2=plugin.configuredLocation("altar.yml","protection.pos2");if(a1==null||a2==null)throw new IllegalStateException("Region unconfigured");for(int i=0;i<80;i++){double t=i/79d;p.spawnParticle(Particle.END_ROD,a1.clone().multiply(1-t).add(a2.clone().toVector().multiply(t)),1,0,0,0,0);}}
         s.sendMessage("Protection enabled="+plugin.protectionEnabled()+" configured="+plugin.protectionConfigured()); return true;
@@ -317,7 +318,7 @@ public final class DragonCommand implements TabExecutor {
     private static String formatLocation(Location location) {
         return location.getWorld().getName()+" "+location.getX()+" "+location.getY()+" "+location.getZ();
     }
-    private static Player player(CommandSender s){ if(!(s instanceof Player p))throw new IllegalArgumentException("Player only");return p; }
+    private Player player(CommandSender s){if(!(s instanceof Player p)){plugin.messages().send(s,"player-only");throw new PlayerOnlyCommandException();}return p;}
     private static void require(CommandSender s,String permission){if(!s.hasPermission(permission))throw new IllegalArgumentException("No permission");}
     private static Player requiredOnline(String name){ Player p=Bukkit.getPlayerExact(name);if(p==null)throw new IllegalArgumentException("Player is not online");return p; }
     @Override public List<String> onTabComplete(CommandSender s,Command c,String l,String[] a) {
@@ -571,5 +572,6 @@ public final class DragonCommand implements TabExecutor {
         throw new IllegalArgumentException("Unknown soul: "+value+". Use Akuma, Rev, or Lamari");
     }
     private static UUID senderId(CommandSender sender){return sender instanceof Player player?player.getUniqueId():UUID.nameUUIDFromBytes(("dragonaltar:"+sender.getName()).getBytes(java.nio.charset.StandardCharsets.UTF_8));}
+    private static final class PlayerOnlyCommandException extends RuntimeException {}
     private record PendingDanger(String operation,List<String> arguments,DestructiveActionPreview preview,String stateFingerprint,Runnable action){}
 }

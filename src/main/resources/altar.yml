@@ -1,13 +1,8 @@
 # Staff-recorded locations only. Runtime altar state is stored in data/altar-state.yml.
-config-version: 2
-existing-structure: true
-schematic:
-  enabled: false
-  required-for-event: false
+config-version: 4
 internal-protection:
   enabled: false
   required-for-event: false
-world: ''
 # Locations remain empty until committed by /dragon setup save.
 altar-center: {}
 ritual-center: {}
@@ -19,7 +14,6 @@ crystals: {}
 pedestals: {}
 protection:
   # Inclusive cuboid corners. Bypass is a permission-gated per-player toggle.
-  enabled: false
   pos1: {}
   pos2: {}
 display:
@@ -27,8 +21,6 @@ display:
   material: DRAGON_EGG
   glow: true
   glow-color: 'AA00AA'
-  bob-height: 0.20
-  scale-pulse-amplitude: 0.08
   rotation-degrees-per-tick: 2.0
   idle-particle: DRAGON_BREATH
   idle-particle-count: 2

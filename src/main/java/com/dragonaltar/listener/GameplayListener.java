@@ -61,6 +61,11 @@ public final class GameplayListener implements Listener {
     @EventHandler(priority=EventPriority.MONITOR) public void serverCommand(ServerCommandEvent e){plugin.scaledDragon().observeCommand(e.getCommand());}
     @EventHandler public void join(PlayerJoinEvent e) {
         eligibility.markJoined(e.getPlayer());
+        if(!plugin.validateSetup().equals("Valid")&&e.getPlayer().hasPermission("dragonaltar.setup"))
+            plugin.messages().send(e.getPlayer(),"setup-incomplete");
+        if(event.state()==com.dragonaltar.dragonevent.DragonEventState.RECOVERY_REQUIRED
+                &&e.getPlayer().hasPermission("dragonaltar.admin.event"))
+            plugin.messages().send(e.getPlayer(),"event-recovery-required");
         Bukkit.getScheduler().runTask(plugin, () -> {
             dragonborn.apply(e.getPlayer());
             plugin.rituals().refundPending(e.getPlayer());

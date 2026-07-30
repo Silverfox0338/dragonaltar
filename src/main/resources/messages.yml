@@ -1,6 +1,5 @@
 # All ordinary player text uses MiniMessage and may be translated here.
-config-version: 7
-prefix: '<dark_purple><bold>DragonAltar</bold></dark_purple> <gray>»</gray> '
+config-version: 8
 no-permission: '<red>You do not have permission.</red>'
 player-only: '<red>This command requires a player.</red>'
 setup-incomplete: '<yellow>DragonAltar is installed but has not been configured. Run <white>/dragon setup begin</white>.</yellow>'
@@ -29,13 +28,13 @@ event-recovery-required: '<red>The Ancient Dragon event requires administrative 
 natural-death: '<dark_purple>A Dragon Child has fallen. Their soul will choose a new bearer in <seconds> seconds.</dark_purple>'
 natural-countdown: '<light_purple>A Dragon Soul chooses in <seconds>…</light_purple>'
 reincarnation: '<gold><player> has been chosen by <soul>.</gold>'
-removal-ritual-invalid-altar: '<red>The chest has the offerings, but the Mother Soul altar is incomplete. Check its foundation, four lit white candles, and four Soul Sand caller pads.</red>'
+removal-ritual-invalid-altar: '<red>The chest has the offerings, but the Mother Soul altar is incomplete. Check its foundation, lit white candles, and Soul Sand caller pads.</red>'
 removal-ritual-participants: '<red>The altar needs one player standing on each of its <count> Soul Sand caller pads.</red>'
 removal-ritual-no-targets: '<red>There are no Dragonborn to target.</red>'
 removal-ritual-busy: '<yellow>That chest is bound to an active removal ritual.</yellow>'
 removal-ritual-expired: '<yellow>The Dragonborn selection ritual expired; no offerings were consumed.</yellow>'
 removal-ritual-invocation: '<newline><dark_purple><bold>THE MOTHER SOUL STIRS</bold></dark_purple><newline><light_purple><ritualists> have called upon the Mother Soul to cleanse <target> of their Dragonborn power.</light_purple><newline>'
-removal-ritual-cleansing-complete: '<newline><dark_red><bold>THE CLEANSING IS COMPLETE</bold></dark_red><newline><red>The Mother Soul tore <soul> from <target>. It has chosen <recipient> as its new vessel. The four callers are marked with Weakness XVI for 12 hours.</red><newline>'
+removal-ritual-cleansing-complete: '<newline><dark_red><bold>THE CLEANSING IS COMPLETE</bold></dark_red><newline><red>The Mother Soul tore <soul> from <target>. It has chosen <recipient> as its new vessel. Every caller is marked with Weakness XVI for 12 hours.</red><newline>'
 removal-ritual-backfire: '<newline><dark_red><bold>THE MOTHER SOUL REBUKES ITS CHILDREN</bold></dark_red><newline><red>The Mother Soul has taken <count> Dragon Soul(s) into silence for <hours> hours.</red><newline>'
 all-dragonborn-silenced: '<newline><dark_purple><bold>THE DRAGONBORN ARE GONE</bold></dark_purple><newline><light_purple>Two Dragonborn callers defied the Mother Soul. She has taken all three souls into silence for <hours> hours.</light_purple><newline>'
 limbo-soul-released: '<gold>The Mother Soul has released <soul> to a new vessel: <player>.</gold>'
@@ -55,5 +54,4 @@ resonance-unlocked: '<newline><aqua><bold>RESONANCE UNLOCKED</bold></aqua><newli
 resonance-lost: '<gray>Your hidden resonance faded as the Dragonborn moved apart.</gray>'
 resonance-cast: '<light_purple><caster> invoked <ability> through your linked Dragon Souls.</light_purple>'
 ultimate-downside: '<red><downside>:</red> <gray>weakened for <seconds>s</gray>'
-egg-hologram: '<light_purple><count> Dragon Souls Await</light_purple>'
 protection-bypass: '<yellow>Altar protection bypass: <enabled></yellow>'

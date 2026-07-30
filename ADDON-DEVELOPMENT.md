@@ -30,7 +30,7 @@ Then add DragonAltar as a provided dependency in the add-on's `pom.xml`:
   <dependency>
     <groupId>com.dragonaltar</groupId>
     <artifactId>dragonaltar</artifactId>
-    <version>1.4.18</version>
+    <version>1.4.19</version>
     <scope>provided</scope>
   </dependency>
   <dependency>

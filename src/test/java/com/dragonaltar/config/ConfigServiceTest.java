@@ -99,4 +99,21 @@ class ConfigServiceTest {
         assertEquals(120,legacy.getInt("rev-hunt.mark.duration-ticks"));
         assertFalse(legacy.contains("abilities.infernos-wrath.speed-seconds"));
     }
+
+    @Test
+    void protectionV3MovesTheLegacyCommandValueToTheActiveSwitch() {
+        YamlConfiguration enabledByLegacyCommand=new YamlConfiguration();
+        enabledByLegacyCommand.set("internal-protection.enabled",false);
+        enabledByLegacyCommand.set("protection.enabled",true);
+        assertTrue(ConfigService.migrateProtectionV3(enabledByLegacyCommand));
+        assertTrue(enabledByLegacyCommand.getBoolean("internal-protection.enabled"));
+        assertFalse(enabledByLegacyCommand.contains("protection.enabled"));
+
+        YamlConfiguration activeSettingWins=new YamlConfiguration();
+        activeSettingWins.set("internal-protection.enabled",true);
+        activeSettingWins.set("protection.enabled",false);
+        assertTrue(ConfigService.migrateProtectionV3(activeSettingWins));
+        assertTrue(activeSettingWins.getBoolean("internal-protection.enabled"));
+        assertFalse(activeSettingWins.contains("protection.enabled"));
+    }
 }

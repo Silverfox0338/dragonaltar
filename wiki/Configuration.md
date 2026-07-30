@@ -1,10 +1,10 @@
 # Configuration Reference
 
-DragonAltar 1.4.18 ships six editable YAML files. Each has a `config-version`. Runtime state is stored separately under `plugins/DragonAltar/data` and uses `data-version`.
+DragonAltar 1.4.19 ships six editable YAML files. Each has a `config-version`. Runtime state is stored separately under `plugins/DragonAltar/data` and uses `data-version`.
 
 > Do not edit runtime data while Paper is running. Do not replace installed configuration with fresh bundled files during an upgrade.
 
-The JAR also contains `plugin.yml`, Paper's packaged plugin descriptor. It declares API version `1.21`, the `/dragon` command and `/dragonaltar` alias, all permission nodes, and the PlaceholderAPI, WorldEdit, and ScaledEnderDragon soft dependencies. Paper reads it from the JAR, so it is not copied out as an editable server configuration file. Its command and permission declarations are covered in [Commands](Commands) and [Permissions](Permissions).
+The JAR also contains `plugin.yml`, Paper's packaged plugin descriptor. It declares API version `1.21`, the `/dragon` command and `/dragonaltar` alias, all permission nodes, and the PlaceholderAPI and ScaledEnderDragon soft dependencies. Paper reads it from the JAR, so it is not copied out as an editable server configuration file. Its command and permission declarations are covered in [Commands](Commands) and [Permissions](Permissions).
 
 ## Units
 
@@ -21,7 +21,7 @@ The JAR also contains `plugin.yml`, Paper's packaged plugin descriptor. It decla
 
 ## `config.yml`
 
-Shipped `config-version`: `2`.
+Shipped `config-version`: `3`.
 
 ### Server and safety
 
@@ -83,12 +83,11 @@ With the shipped threshold, Mother Soul cast 7 is the first cast eligible for th
 
 | Path | Default |
 |---|---:|
-| `forced-removal-ritual.participant-count` | 4 |
 | `forced-removal-ritual.selection-timeout-seconds` | 60 |
 | `forced-removal-ritual.animation-duration-ticks` | 160 |
 | `forced-removal-ritual.backfire-limbo-hours` | 12 |
 
-Version 1.4.18's structure and participant logic is fixed at four caller pads even though `participant-count` is shipped. The runtime message also reports four. The timeout, animation duration, and limbo hours are active.
+The caller count and required weakness-potion count are derived from the ritual's caller-pad layout, so they cannot drift apart. The timeout, animation duration, and limbo hours are configurable.
 
 ### Developer branch
 
@@ -96,26 +95,21 @@ Version 1.4.18's structure and participant logic is fixed at four caller pads ev
 
 ## `altar.yml`
 
-Shipped `config-version`: `2`.
+Shipped `config-version`: `4`.
 
 ### Structure and protection keys
 
-| Path | Default | 1.4.18 behavior |
+| Path | Default | 1.4.19 behavior |
 |---|---:|---|
-| `existing-structure` | `true` | Retained setting; no runtime branch reads it |
-| `schematic.enabled` | `false` | Reported in validation output only |
-| `schematic.required-for-event` | `false` | Retained; not enforced |
 | `internal-protection.enabled` | `false` | Active switch for the cuboid protection listener |
-| `internal-protection.required-for-event` | `false` | Retained; not enforced |
-| `protection.enabled` | `false` | Legacy fallback only when `internal-protection.enabled` is absent |
+| `internal-protection.required-for-event` | `false` | When true, event validation requires enabled protection and same-world corners |
 
-The shipped file contains both protection switches. Since `internal-protection.enabled` is present, it wins.
+During the version 3 upgrade, the former `protection.enabled` value is migrated to the active switch and the old key is removed.
 
 ### Saved locations
 
 The file initially contains empty values for:
 
-- `world`
 - `altar-center`
 - `ritual-center`
 - `egg-display`
@@ -136,8 +130,6 @@ The setup service writes `world-uuid`, `world`, `x`, `y`, `z`, `yaw`, and `pitch
 | `display.material` | `DRAGON_EGG` | Yes |
 | `display.glow` | `true` | Yes |
 | `display.glow-color` | `AA00AA` | Yes |
-| `display.bob-height` | 0.20 | No runtime read in 1.4.18 |
-| `display.scale-pulse-amplitude` | 0.08 | No runtime read in 1.4.18 |
 | `display.rotation-degrees-per-tick` | 2.0 | Yes |
 | `display.idle-particle` | `DRAGON_BREATH` | Yes |
 | `display.idle-particle-count` | 2 | Yes, 0 to 128 |
@@ -170,7 +162,7 @@ The `%remaining_souls%` token in these lines is replaced directly. Text uses Min
 
 ## `ritual.yml`
 
-Shipped `config-version`: `2`.
+Shipped `config-version`: `3`.
 
 ### Offerings
 
@@ -186,13 +178,12 @@ Shipped `config-version`: `2`.
 
 Each amount must be 1 to 2,304. Materials must be valid Paper material names.
 
-`id`, `material`, `amount`, and `display-name` are read. The shipped Elytra offering's `durability-mode: ANY` is retained but is not read by 1.4.18.
+`id`, `material`, `amount`, and `display-name` are read. Elytra at any durability level is accepted.
 
 ### Elytra matching
 
 | Path | Default | Active |
 |---|---:|:---:|
-| `elytra.accept-any-durability` | `true` | Durability is accepted, but this boolean is not read |
 | `elytra.accept-enchanted` | `true` | Yes |
 | `elytra.accept-renamed` | `true` | Yes |
 | `elytra.accept-custom-lore` | `true` | Yes |
@@ -234,7 +225,7 @@ Particle count is 0 to 512. The boss-bar color and particle must be valid Paper 
 
 ## `abilities.yml`
 
-Shipped `config-version`: `6`.
+Shipped `config-version`: `7`.
 
 ### Energy and presentation caps
 
@@ -257,12 +248,10 @@ Target radius and range values are validated from 0 to 64. Runtime also hard-cla
 |---|---|
 | `focus.material` | `ECHO_SHARD` |
 | `focus.name` | `Dragon Focus` in light purple MiniMessage |
-| `focus.soulbound` | `true` |
-| `focus.non-droppable` | `true` |
 | `focus.blocked-command-prefixes` | `ah sell`, `auction sell`, `auctionhouse sell`, `market sell`, `sell` |
 | `focus.blocked-inventory-command-prefixes` | `sellall` |
 
-The Focus protection listeners are always active for tagged Focus items. The two booleans are descriptive shipped settings and are not used as off switches in 1.4.18.
+Focus protection listeners are always active for tagged Focus items.
 
 Command prefix matching is case-insensitive, collapses whitespace, accepts a leading slash, and also matches namespaced command labels.
 
@@ -273,7 +262,6 @@ Command prefix matching is case-insensitive, collapses whitespace, accepts a lea
 | `passives.additional-hearts` | 2 | Yes |
 | `passives.slow-falling` | `true` | Yes |
 | `passives.neutral-endermen` | `true` | Yes |
-| `passives.fire-damage-multiplier` | 0.5 | No runtime read |
 | `passives.particles` | `true` | Yes |
 | `named-souls.akuma.cold-temperature-threshold` | 0.15 | Yes |
 | `named-souls.akuma.cold-speed-bonus` | 0.15 | Yes |
@@ -297,8 +285,6 @@ Command prefix matching is case-insensitive, collapses whitespace, accepts a lea
 | `titans-bulwark` | Full bar | 120 seconds |
 
 `ultimate.shared-cooldown-seconds` defaults to 120.
-
-The `abilities.dash`, `abilities.sight`, and `abilities.resolve` sections are retained from older layouts but are not registered in 1.4.18. See [Abilities](Abilities) for every active combat, duration, damage, radius, and drawback default.
 
 The full leaf-by-leaf reference, including presentation, sound, Rev Hunt, drawback, and resonance tuning, is on [Ability Configuration](Ability-Configuration).
 
@@ -377,7 +363,7 @@ Unknown or invalid runtime steps are logged and skipped.
 
 ## `messages.yml`
 
-Shipped `config-version`: `7`.
+Shipped `config-version`: `8`.
 
 Ordinary localized text uses MiniMessage. Replacement values supplied by the plugin are inserted as unparsed text, which prevents names and values from injecting MiniMessage tags.
 
@@ -385,7 +371,7 @@ The shipped keys are grouped below.
 
 | Group | Keys |
 |---|---|
-| General command | `prefix`, `no-permission`, `player-only`, `command-error`, `help`, `player-status` |
+| General command | `no-permission`, `player-only`, `command-error`, `help`, `player-status` |
 | Setup and event | `setup-incomplete`, `event-started`, `event-defeated`, `event-recovery-required` |
 | Souls and transfer | `dragonborn-gain`, `dragonborn-transfer`, `no-eligible-recipient`, `natural-death`, `natural-countdown`, `reincarnation`, `combat-log-transfer` |
 | Focus and settings | `focus-restored`, `focus-unavailable`, `focus-protected`, `focus-inventory-full`, `settings-updated`, `settings-status` |
@@ -394,9 +380,9 @@ The shipped keys are grouped below.
 | Resonances and HUD | `ability-resonance-cooldown`, `ability-resonance-lost`, `energy-hud`, `resonance-unlocked`, `resonance-lost`, `resonance-cast` |
 | Mother Soul | `removal-ritual-invalid-altar`, `removal-ritual-participants`, `removal-ritual-no-targets`, `removal-ritual-busy`, `removal-ritual-expired`, `removal-ritual-invocation`, `removal-ritual-cleansing-complete`, `removal-ritual-backfire`, `all-dragonborn-silenced` |
 | Limbo and fracture | `limbo-soul-released`, `fractured-soul-manifest`, `fractured-soul-claimed`, `fractured-soul-already-bound` |
-| History and display | `history-entry`, `history-empty`, `egg-hologram`, `protection-bypass` |
+| History and display | `history-entry`, `history-empty`, `protection-bypass` |
 
-In 1.4.18, `prefix` is not automatically prepended by `MessageService`. The shipped `player-only`, `setup-incomplete`, `event-started`, `ritual-error`, `event-recovery-required`, and `egg-hologram` entries have no direct call path. The recipe display uses `altar.yml` lines instead.
+`player-only` handles commands that require a player. Setup-capable players are warned with `setup-incomplete` while validation fails, and event administrators receive `event-recovery-required` while manual recovery is needed. `event-started` is broadcast after Paper accepts the vanilla respawn ritual, and `ritual-error` reports player ritual start failures. The recipe display uses `altar.yml` lines instead of a message key.
 
 ## Runtime data files
 
@@ -450,6 +436,7 @@ Targeted migrations cover:
 - Ability HUD status and resonance fields
 - Renamed resonance tunables
 - Rev version 6 timing and combat settings
+- The former altar-protection switch
 
 Deleting a key causes its packaged default to return at the next load. Use a documented boolean or allowed zero value to disable a feature.
 

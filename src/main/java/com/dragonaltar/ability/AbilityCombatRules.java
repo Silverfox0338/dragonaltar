@@ -1,7 +1,6 @@
 package com.dragonaltar.ability;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -73,94 +72,6 @@ public final class AbilityCombatRules {
 
         private void prune(long nowMillis) {
             targets.values().removeIf(value -> value.expiresAtMillis() <= nowMillis);
-        }
-    }
-
-    public record InfernoMark(UUID caster, long expiresAtMillis, boolean rewarded) {
-    }
-
-    public record PursuitReward(long speedExpiresAtMillis, boolean granted) {
-    }
-
-    public static final class InfernoTracker {
-        private final Map<UUID, InfernoMark> targets = new HashMap<>();
-        private final Map<UUID, Long> speedExpiries = new HashMap<>();
-        private final Map<UUID, Long> speedCaps = new HashMap<>();
-
-        public void beginPursuit(UUID caster, long speedExpiryMillis, long maximumExpiryMillis) {
-            speedExpiries.put(caster, speedExpiryMillis);
-            speedCaps.put(caster, Math.max(speedExpiryMillis, maximumExpiryMillis));
-        }
-
-        public void mark(UUID target, UUID caster, long expiresAtMillis) {
-            targets.put(target, new InfernoMark(caster, expiresAtMillis, false));
-        }
-
-        public PursuitReward reward(UUID target, UUID attacker, long nowMillis, long extensionMillis) {
-            InfernoMark mark = targets.get(target);
-            if (mark == null || mark.expiresAtMillis() <= nowMillis) {
-                targets.remove(target);
-                return new PursuitReward(speedExpiries.getOrDefault(attacker, nowMillis), false);
-            }
-            if (mark.rewarded() || !mark.caster().equals(attacker)) {
-                return new PursuitReward(speedExpiries.getOrDefault(attacker, nowMillis), false);
-            }
-            long current = Math.max(nowMillis, speedExpiries.getOrDefault(attacker, nowMillis));
-            long cap = speedCaps.getOrDefault(attacker, current);
-            long extended = Math.min(cap, current + Math.max(0, extensionMillis));
-            targets.put(target, new InfernoMark(mark.caster(), mark.expiresAtMillis(), true));
-            speedExpiries.put(attacker, extended);
-            return new PursuitReward(extended, extended > current);
-        }
-
-        public boolean markedBy(UUID target, UUID caster, long nowMillis) {
-            InfernoMark mark = targets.get(target);
-            if (mark == null) {
-                return false;
-            }
-            if (mark.expiresAtMillis() <= nowMillis) {
-                targets.remove(target);
-                return false;
-            }
-            return mark.caster().equals(caster);
-        }
-
-        public boolean marked(UUID target, long nowMillis) {
-            InfernoMark mark = targets.get(target);
-            if (mark == null) {
-                return false;
-            }
-            if (mark.expiresAtMillis() <= nowMillis) {
-                targets.remove(target);
-                return false;
-            }
-            return true;
-        }
-
-        public int activeMarks(UUID caster, long nowMillis) {
-            prune(nowMillis);
-            return (int) targets.values().stream()
-                    .filter(mark -> mark.caster().equals(caster) && !mark.rewarded())
-                    .count();
-        }
-
-        public long speedExpiry(UUID caster) {
-            return speedExpiries.getOrDefault(caster, 0L);
-        }
-
-        public void clear() {
-            targets.clear();
-            speedExpiries.clear();
-            speedCaps.clear();
-        }
-
-        private void prune(long nowMillis) {
-            Iterator<Map.Entry<UUID, InfernoMark>> iterator = targets.entrySet().iterator();
-            while (iterator.hasNext()) {
-                if (iterator.next().getValue().expiresAtMillis() <= nowMillis) {
-                    iterator.remove();
-                }
-            }
         }
     }
 
@@ -362,11 +273,6 @@ public final class AbilityCombatRules {
         public long huntEndsAt(UUID caster) {
             HunterState state = hunters.get(caster);
             return state == null ? 0 : state.huntEndsAt;
-        }
-
-        public long mobilityEndsAt(UUID caster) {
-            HunterState state = hunters.get(caster);
-            return state == null ? 0 : state.mobilityEndsAt;
         }
 
         public int heat(UUID caster) {

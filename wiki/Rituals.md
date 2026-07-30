@@ -23,7 +23,7 @@ The shipped recipe is:
 
 The default Elytra policy consumes the most damaged acceptable Elytra first. Other supported policies are least damaged, first matching inventory slot, and lowest total enchantment level.
 
-The shipped `accept-any-durability` and offering `durability-mode` keys do not add a separate runtime check in 1.4.18. Elytra durability is accepted in practice. Enchantment, custom name, custom lore, equipped-slot, blocked-PDC, and selection-priority settings are active.
+All Elytra durability levels are accepted. Enchantment, custom name, custom lore, equipped-slot, blocked-PDC, and selection-priority settings are configurable.
 
 ## Offering modes
 

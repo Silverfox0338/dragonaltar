@@ -1,6 +1,6 @@
 # Integrations
 
-DragonAltar declares PlaceholderAPI, WorldEdit, and ScaledEnderDragon as soft dependencies. None is required for the core event, altar, souls, rituals, or abilities.
+DragonAltar declares PlaceholderAPI and ScaledEnderDragon as soft dependencies. Neither is required for the core event, altar, souls, rituals, or abilities.
 
 Use:
 
@@ -38,20 +38,6 @@ Player-scoped ability placeholders are intended for Dragonborn subjects.
 The PlaceholderAPI expansion reads live service state directly rather than using the privacy-filtered snapshot API. Keep player-scoped placeholders in the subject's own HUD. Do not use them to build a public cross-player holder or diagnostic board. For public websites or broad in-game displays, use the [API Reference](API-Reference) snapshot methods and their redacted holder behavior.
 
 Unknown placeholder parameters return `null`, which lets PlaceholderAPI continue its normal fallback behavior.
-
-## WorldEdit
-
-WorldEdit is a provided optional dependency and soft dependency. Version 1.4.18:
-
-- Detects it by plugin name
-- Reports it through `/dragon system integrations`
-- Creates a `schematics` directory
-- Does not call the WorldEdit API
-- Does not load, save, paste, or validate a schematic
-
-The `schematic.enabled` and `schematic.required-for-event` keys are retained configuration entries. Enabling them does not create a structure workflow or make a schematic an event prerequisite in 1.4.18.
-
-Build the altar manually or use WorldEdit independently before recording the setup points.
 
 ## ScaledEnderDragon
 

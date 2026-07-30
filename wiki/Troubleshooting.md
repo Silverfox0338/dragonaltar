@@ -97,18 +97,11 @@ Reconcile:
 
 If the altar is dormant or has no unclaimed souls, missing claim displays are expected. Use `/dragon altar status` before forcing a preview count.
 
-## Protection will not enable
+## Protection is incomplete
 
-The shipped file contains both `internal-protection.enabled` and legacy `protection.enabled`. Version 1.4.18 reads the internal setting first.
+Run `/dragon protection enable`, then set both corners with `/dragon protection setpos1` and `/dragon protection setpos2`. Both corners must resolve to the same world. This is a start blocker when `internal-protection.required-for-event` is true.
 
-Set:
-
-```yaml
-internal-protection:
-  enabled: true
-```
-
-Then restart or reload and run:
+Then run:
 
 ```text
 /dragon protection status
@@ -335,7 +328,7 @@ Do not cast to `DragonAltarApiImpl`. Load `DragonAltarApi` from `ServicesManager
 
 Provide:
 
-- DragonAltar 1.4.18
+- DragonAltar 1.4.19
 - Paper build
 - Java version
 - Reproduction steps

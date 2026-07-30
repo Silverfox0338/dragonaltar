@@ -156,24 +156,18 @@ The optional cuboid protection blocks breaking, placing, fluids, fire spread, pi
 
 Set the corners with the guided setup `pos1` and `pos2` commands, or with the protection commands after setup.
 
-The active 1.4.18 switch is:
+The active 1.4.19 switch is:
 
 ```yaml
 internal-protection:
   enabled: true
 ```
 
-The shipped `protection.enabled` key and `/dragon protection enable|disable` write path are retained for older configurations, but `internal-protection.enabled` takes precedence when present. With the shipped file, edit `internal-protection.enabled` directly and reload or restart.
+`/dragon protection enable|disable` updates `internal-protection.enabled`.
 
-`internal-protection.required-for-event` is present in the shipped file but is not enforced by 1.4.18 event validation.
+When `internal-protection.required-for-event` is true, official event validation requires protection to be enabled with both corners configured in the same world.
 
 Players with `dragonaltar.protection.bypass` can toggle a per-session bypass with `/dragon protection bypass`. The bypass is not a persistent configuration change.
-
-## Schematic settings
-
-`existing-structure`, `schematic.enabled`, and `schematic.required-for-event` are retained configuration entries. Version 1.4.18 reports the schematic setting in validation output but does not load or paste a schematic, and it does not enforce `required-for-event`.
-
-Build the physical altar yourself, or use another tool outside DragonAltar.
 
 ## Production readiness
 

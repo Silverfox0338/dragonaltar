@@ -1,29 +1,28 @@
 # Installing DragonAltar
 
-DragonAltar 1.4.18 requires Paper 1.21.4 and Java 21. Paper and optional plugin APIs are not bundled in the DragonAltar JAR.
+DragonAltar 1.4.19 requires Paper 1.21.4 and Java 21. Paper and optional plugin APIs are not bundled in the DragonAltar JAR.
 
 ## Fresh installation
 
 1. Stop the Paper server.
 2. Confirm that the server actually starts with Java 21.
-3. Put `DragonAltar-1.4.18.jar` in the server's `plugins` directory.
+3. Put `DragonAltar-1.4.19.jar` in the server's `plugins` directory.
 4. Start the server once.
-5. Confirm that the console reports DragonAltar 1.4.18 and does not report a configuration validation failure.
+5. Confirm that the console reports DragonAltar 1.4.19 and does not report a configuration validation failure.
 6. Stop the server and review the six generated configuration files under `plugins/DragonAltar`.
 7. Start the server and complete [Altar Setup](Altar-Setup).
 8. Run `/dragon system validate`, `/dragon setup validate`, and `/dragon system health`.
 9. Test the full event and ritual flow away from production.
 10. Set `server-mode: PRODUCTION` only after the live test passes.
 
-The generated directories include `data`, `backups`, `logs`, and `schematics`. The `schematics` directory is created for compatibility, but 1.4.18 does not include a structure-paste workflow.
+The generated directories include `data`, `backups`, and `logs`.
 
 ## Required and optional plugins
 
-| Component | Required | What 1.4.18 does |
+| Component | Required | What 1.4.19 does |
 |---|---:|---|
 | Paper 1.21.4 | Yes | Provides the server API and vanilla Ender Dragon respawn controls |
 | PlaceholderAPI | No | Registers the `%dragonaltar_...%` placeholders |
-| WorldEdit | No | Detects and reports the plugin; no schematic paste path is implemented |
 | ScaledEnderDragon | No | Lets its normal scaling and rewards observe DragonAltar's vanilla respawned dragon |
 
 Use `/dragon system integrations` to see which optional plugins were enabled when DragonAltar checked the server.
@@ -43,7 +42,7 @@ It merges missing defaults and runs strict validation. If validation fails durin
 
 The initial altar locations are blank. This is expected. Use `/dragon setup begin` rather than typing serialized locations by hand.
 
-## Upgrading to 1.4.18
+## Upgrading to 1.4.19
 
 > Stop the server before copying or restoring DragonAltar data. Do not replace installed YAML files with fresh bundled copies.
 
@@ -52,13 +51,18 @@ The initial altar locations are blank. This is expected. Use `/dragon setup begi
 3. Keep the previous DragonAltar JAR with that backup.
 4. Replace only the plugin JAR.
 5. Start Paper and read the DragonAltar startup messages.
-6. Run `/dragon system version` and confirm `1.4.18`.
+6. Run `/dragon system version` and confirm `1.4.19`.
 7. Run `/dragon system validate`.
 8. Run `/dragon altar validate`.
 9. Run `/dragon system health`.
 10. Check the altar displays, all public soul statuses, pending refunds, and expected cooldown behavior.
 
 Missing settings are added automatically. Existing settings at current paths are preserved. Known renamed settings receive targeted migration where a safe mapping exists.
+
+Older installed YAML files may still contain settings retired in 1.4.19 because
+DragonAltar does not delete administrator entries during a normal upgrade.
+Those entries are ignored. After making a backup, compare the files with the
+[Configuration](Configuration) reference and remove retired entries if desired.
 
 ## Rollback
 
@@ -83,7 +87,7 @@ mvn clean package
 The verified JAR is written to:
 
 ```text
-target/DragonAltar-1.4.18.jar
+target/DragonAltar-1.4.19.jar
 ```
 
 Maven compiles with Java release 21 and runs the JUnit suite.

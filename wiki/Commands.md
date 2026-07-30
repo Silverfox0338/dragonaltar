@@ -203,15 +203,15 @@ Use `all` or omit the ability id to clear all cooldowns.
 | Syntax | Sender | Permission | Purpose | Safety |
 |---|---|---|---|---|
 | `/dragon protection status` | Either | `dragonaltar.admin.protection` | Show enabled and configured status | Read-only |
-| `/dragon protection validate` | Either | `dragonaltar.admin.protection` | Same status path in 1.4.18 | Read-only |
-| `/dragon protection enable` | Either | `dragonaltar.admin.protection` | Write legacy `protection.enabled: true` | Immediate |
-| `/dragon protection disable` | Either | `dragonaltar.admin.protection` | Write legacy `protection.enabled: false` | General confirmation |
+| `/dragon protection validate` | Either | `dragonaltar.admin.protection` | Same status path in 1.4.19 | Read-only |
+| `/dragon protection enable` | Either | `dragonaltar.admin.protection` | Enable `internal-protection.enabled` | Immediate |
+| `/dragon protection disable` | Either | `dragonaltar.admin.protection` | Disable `internal-protection.enabled` | General confirmation |
 | `/dragon protection setpos1` | Player | `dragonaltar.admin.protection` | Save current location as corner 1 | General confirmation |
 | `/dragon protection setpos2` | Player | `dragonaltar.admin.protection` | Save current location as corner 2 | General confirmation |
 | `/dragon protection visualize` | Player | `dragonaltar.admin.protection` | Draw a particle line between the saved corners | Cosmetic |
 | `/dragon protection bypass` | Player | `dragonaltar.protection.bypass` | Toggle the player's session bypass | Immediate |
 
-With the shipped file, `internal-protection.enabled` takes precedence over the legacy value written by enable and disable. See [Altar Setup](Altar-Setup).
+When `internal-protection.required-for-event` is true, the official event preflight also requires valid same-world corners. See [Altar Setup](Altar-Setup).
 
 ## System commands
 

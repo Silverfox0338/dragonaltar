@@ -27,6 +27,7 @@ public final class ConfigService {
                     YamlConfiguration defaults=YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8));
                     boolean changed=false;
                     int previousVersion=loaded.getInt("config-version",0);
+                    if(name.equals("altar.yml")&&previousVersion<3&&migrateProtectionV3(loaded))changed=true;
                     if(name.equals("ritual.yml")&&previousVersion<2&&isOriginalBetaRecipe(loaded)){loaded.set("offerings",defaults.getList("offerings"));changed=true;}
                     if(name.equals("messages.yml")&&previousVersion<5&&loaded.getString("removal-ritual-backfire","").contains("intended target remains untouched")){
                         loaded.set("removal-ritual-backfire",defaults.getString("removal-ritual-backfire"));
@@ -125,6 +126,15 @@ public final class ConfigService {
         changed|=renameScaledTunable(loaded,defaults,"abilities.infernos-wrath.mark-duration-seconds",
                 "rev-hunt.mark.duration-ticks",8d,20d);
         return changed;
+    }
+    static boolean migrateProtectionV3(YamlConfiguration loaded){
+        if(!loaded.contains("protection.enabled"))return false;
+        boolean legacy=loaded.getBoolean("protection.enabled",false);
+        if(!loaded.contains("internal-protection.enabled")
+                ||(legacy&&!loaded.getBoolean("internal-protection.enabled",false)))
+            loaded.set("internal-protection.enabled",legacy);
+        loaded.set("protection.enabled",null);
+        return true;
     }
     private static boolean renameScaledTunable(YamlConfiguration loaded,YamlConfiguration defaults,String oldPath,
                                                 String newPath,double oldDefault,double scale){

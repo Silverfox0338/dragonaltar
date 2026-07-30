@@ -17,10 +17,10 @@ class PluginMetadataTest {
             YamlConfiguration yaml=new YamlConfiguration();
             yaml.load(new InputStreamReader(stream,StandardCharsets.UTF_8));
             assertEquals("DragonAltar",yaml.getString("name"));
-            assertEquals("1.4.18",yaml.getString("version"));
+            assertEquals("1.4.19",yaml.getString("version"));
             assertEquals("1.21",yaml.getString("api-version"));
             assertEquals("com.dragonaltar.DragonAltarPlugin",yaml.getString("main"));
-            assertEquals(Set.of("PlaceholderAPI","WorldEdit","ScaledEnderDragon"),Set.copyOf(yaml.getStringList("softdepend")));
+            assertEquals(Set.of("PlaceholderAPI","ScaledEnderDragon"),Set.copyOf(yaml.getStringList("softdepend")));
             assertTrue(yaml.isConfigurationSection("commands.dragon"));
             assertEquals(Set.of("dragonaltar"),Set.copyOf(yaml.getStringList("commands.dragon.aliases")));
             assertTrue(yaml.isConfigurationSection("permissions.dragonaltar.admin"));

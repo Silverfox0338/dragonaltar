@@ -1,6 +1,6 @@
 # API Reference
 
-DragonAltar 1.4.18 publishes API contract `2.0`. Load it through Bukkit:
+DragonAltar 1.4.19 publishes API contract `2.0`. Load it through Bukkit:
 
 ```java
 DragonAltarApi api = Bukkit.getServicesManager().load(DragonAltarApi.class);
@@ -39,7 +39,7 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 | `Collection<String> abilityIds()` | None | Every registered ability id | Includes built-ins, resonances, and live add-on abilities |
 | `Optional<DragonAbilityInfo> ability(String id)` | Ability id, case-insensitive | Public metadata | Empty when unknown; null also returns empty |
 | `int energy(Player player)` | Player | Current energy | Returns 0 when no public Dragonborn state |
-| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.18 configuration |
+| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.19 configuration |
 | `boolean selectAbility(Player player, String abilityId)` | Player, id | Whether final selection matches | Main thread; needs base permission, holder state, registered and available id; selection event may cancel |
 
 `cast` returns the internal localization key for some built-in failures and a plain message for add-on failures. Treat the string as diagnostic unless your add-on owns the returned message.
@@ -270,7 +270,7 @@ Every concrete event implements `getHandlers()` and a static `getHandlerList()` 
 | `DragonSoulReserveEvent` | Yes | `(String soulId, UUID player)`, `soulId()`, `player()` | A soul is about to be reserved |
 | `DragonSoulTransferStartEvent` | Yes | `(String soulId, UUID from, UUID to)`, `soulId()`, `from()`, `to()` | An existing holder is about to change |
 | `DragonSoulTransferCompleteEvent` | No | `(String soulId, UUID from, UUID to)`, `soulId()`, `from()`, `to()` | Existing holder change completed |
-| `DragonSoulTransferEvent` | Yes | Same transfer constructor and accessors | Public type retained, but 1.4.18 does not dispatch it |
+| `DragonSoulTransferEvent` | Yes | Same transfer constructor and accessors | Compatibility pre-transfer event; cancellation prevents the transfer |
 | `DragonbornGainEvent` | No | `(UUID player, String soulId)`, `player()`, `soulId()` | A player gains a soul |
 | `DragonbornLoseEvent` | No | `(UUID player, String soulId)`, `player()`, `soulId()` | A player loses a soul |
 | `DragonAbilitySelectEvent` | Yes | `(Player player, String abilityId)`, `player()`, `abilityId()` | Available ability selection is about to persist |
@@ -279,7 +279,7 @@ Every concrete event implements `getHandlers()` and a static `getHandlerList()` 
 
 `DragonEnergyChangeEvent.newEnergy(int)` lets a listener replace the proposed value. DragonAltar clamps the final value back into 0 through maximum after event handlers return.
 
-`DragonSoulTransferStartEvent` and `DragonSoulTransferCompleteEvent` are the reliable transfer pair in 1.4.18. The older `DragonSoulTransferEvent` class exists but has no dispatch call.
+`DragonSoulTransferStartEvent` is dispatched first. If it is not cancelled, the compatibility `DragonSoulTransferEvent` is dispatched before the durable assignment. Cancelling either event prevents the transfer. `DragonSoulTransferCompleteEvent` is dispatched after a successful assignment.
 
 Do not construct and call DragonAltar events to force gameplay. They are notifications and cancellation points around DragonAltar-owned state changes.
 

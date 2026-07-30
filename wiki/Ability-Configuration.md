@@ -1,6 +1,6 @@
 # Ability Configuration
 
-This is the complete tuning reference for the shipped `abilities.yml` in DragonAltar 1.4.18. The [Abilities](Abilities) and [Resonances](Resonances) pages explain what players experience.
+This is the complete tuning reference for the shipped `abilities.yml` in DragonAltar 1.4.19. The [Abilities](Abilities) and [Resonances](Resonances) pages explain what players experience.
 
 ## Reading the values
 
@@ -15,7 +15,7 @@ Reloading this file rebuilds the ability services. A validation failure disables
 
 ## Global energy and presentation
 
-Shipped `config-version`: `6`.
+Shipped `config-version`: `7`.
 
 | Path | Shipped value | Purpose |
 |---|---:|---|
@@ -36,8 +36,6 @@ Validation caps an emission at 512 particles, a ring at 128 points, and view dis
 |---|---|---|
 | `focus.material` | `ECHO_SHARD` | Material used for a new Focus |
 | `focus.name` | `<light_purple>Dragon Focus` | MiniMessage display name |
-| `focus.soulbound` | `true` | Descriptive retained setting; not an off switch in 1.4.18 |
-| `focus.non-droppable` | `true` | Descriptive retained setting; not an off switch in 1.4.18 |
 | `focus.blocked-command-prefixes` | `ah sell`, `auction sell`, `auctionhouse sell`, `market sell`, `sell` | Commands blocked while a Focus is present |
 | `focus.blocked-inventory-command-prefixes` | `sellall` | Commands that trigger an inventory scan |
 
@@ -50,7 +48,6 @@ Focus identity comes from persistent item data, not the visible name.
 | `passives.additional-hearts` | 2 | Extra maximum-health hearts |
 | `passives.slow-falling` | `true` | Slow Falling passive switch |
 | `passives.neutral-endermen` | `true` | Ordinary Enderman neutrality switch |
-| `passives.fire-damage-multiplier` | 0.5 | Retained key with no runtime read in 1.4.18 |
 | `passives.particles` | `true` | Passive ambient particles |
 | `named-souls.akuma.cold-temperature-threshold` | 0.15 | Cold-biome temperature ceiling |
 | `named-souls.akuma.cold-speed-bonus` | 0.15 | Akuma cold-biome movement bonus |
@@ -442,17 +439,5 @@ Every setting in this table is below `resonances.glacial-bastion`.
 | Particles | `anticipation-particles: 96`; `active-particles: 18`; `impact-particles: 128`; `pulse-particles: 72`; `flash-particles: 3`; `finisher-particles: 128` |
 
 Every setting in this table is below `resonances.dragon-trinity`.
-
-## Retained ability sections
-
-These entries still migrate and validate, but DragonAltar 1.4.18 does not register them as castable abilities:
-
-| Path | Shipped settings |
-|---|---|
-| `abilities.dash` | `name: Dash`; `energy: 20`; `cooldown-seconds: 8`; `strength: 1.8` |
-| `abilities.sight` | `name: Sight`; `energy: 25`; `cooldown-seconds: 30`; `duration-seconds: 12`; `radius: 24` |
-| `abilities.resolve` | `name: Resolve`; `energy: 35`; `cooldown-seconds: 35`; `resistance-seconds: 5`; `removed-effects: [POISON, WITHER, WEAKNESS, SLOWNESS, MINING_FATIGUE, BLINDNESS, NAUSEA, HUNGER, DARKNESS]` |
-
-Changing retained values does not add these abilities to a player's registry.
 
 See [Configuration](Configuration) for the other shipped files and [Troubleshooting](Troubleshooting) for safe reload checks.

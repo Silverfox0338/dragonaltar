@@ -4,8 +4,6 @@ Every Dragonborn has a Dragon Focus, 100 Dragon Energy, two shared abilities, tw
 
 Server owners looking for every `abilities.yml` value can use the [Ability Configuration](Ability-Configuration) reference.
 
-The shipped ability list also contains older `dash`, `sight`, and `resolve` configuration sections. They are not registered as castable abilities in 1.4.18.
-
 ## Dragon Energy
 
 | Setting | Shipped value |
@@ -44,7 +42,7 @@ All three souls receive:
 - Neutral Endermen
 - Passive cosmetic particles unless disabled
 
-The shipped `passives.fire-damage-multiplier` value is retained in `abilities.yml` but is not read by 1.4.18. Rev's actual fire immunity is handled by its named passive.
+Rev's fire immunity is handled by its named passive.
 
 ## Shared abilities
 

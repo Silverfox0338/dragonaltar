@@ -46,7 +46,6 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class DragonbornRemovalRitual implements Listener {
     private static final int PHANTOM_MEMBRANES = 128;
-    private static final int WEAKNESS_POTIONS = 4;
     private static final int NETHER_STARS = 1;
     private static final int NETHERITE_BLOCKS = 1;
     private static final int WEAKNESS_DURATION = 12 * 60 * 60 * 20;
@@ -103,7 +102,7 @@ public final class DragonbornRemovalRitual implements Listener {
 
         List<Participant> participants = participantsAtPads(chest.getLocation());
         if (participants == null || participants.stream().noneMatch(player -> player.id().equals(leader.getUniqueId()))) {
-            plugin.messages().send(leader, "removal-ritual-participants", "count", "4");
+            plugin.messages().send(leader, "removal-ritual-participants", "count", Integer.toString(PAD_OFFSETS.size()));
             return;
         }
         if (plugin.souls().all().stream().noneMatch(soul -> soul.holder() != null)) {
@@ -189,7 +188,7 @@ public final class DragonbornRemovalRitual implements Listener {
         }
         List<Player> ritualists = validateParticipants(session);
         if (ritualists == null) {
-            fail(leader, "All four ritualists must remain standing at the altar.");
+            fail(leader, "All " + PAD_OFFSETS.size() + " ritualists must remain standing at the altar.");
             return;
         }
         if (!animating.add(leader.getUniqueId())) return;
@@ -233,7 +232,7 @@ public final class DragonbornRemovalRitual implements Listener {
         }
         ItemStack[] before = cloneContents(chest.getInventory().getContents());
         consume(chest.getInventory(), Material.PHANTOM_MEMBRANE, PHANTOM_MEMBRANES);
-        consumeWeaknessPotions(chest.getInventory(), WEAKNESS_POTIONS);
+        consumeWeaknessPotions(chest.getInventory(), PAD_OFFSETS.size());
         consume(chest.getInventory(), Material.NETHER_STAR, NETHER_STARS);
         consume(chest.getInventory(), Material.NETHERITE_BLOCK, NETHERITE_BLOCKS);
         List<DragonSoul> callerSouls = ritualists.stream()
@@ -430,7 +429,7 @@ public final class DragonbornRemovalRitual implements Listener {
 
     private static boolean hasOfferings(Inventory inventory) {
         return count(inventory, Material.PHANTOM_MEMBRANE) >= PHANTOM_MEMBRANES
-                && countWeaknessPotions(inventory) >= WEAKNESS_POTIONS
+                && countWeaknessPotions(inventory) >= PAD_OFFSETS.size()
                 && count(inventory, Material.NETHER_STAR) >= NETHER_STARS
                 && count(inventory, Material.NETHERITE_BLOCK) >= NETHERITE_BLOCKS;
     }

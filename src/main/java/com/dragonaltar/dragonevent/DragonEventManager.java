@@ -52,6 +52,7 @@ public final class DragonEventManager {
         if(state==DragonEventState.ACTIVE&&canonicalDragon().isEmpty()){state=DragonEventState.RECOVERY_REQUIRED;recoveryChanged=true;}
         if(state==DragonEventState.NOT_STARTED&&store.load("altar-state.yml").getString("altar.state")==null)setAltarState(AltarState.UNCONFIGURED);
         if(!y.contains("dragon-event.state")||recoveryChanged)save(null,null);
+        if(state==DragonEventState.RECOVERY_REQUIRED)notifyRecoveryRequired();
         if(state==DragonEventState.DEFEATED||state==DragonEventState.ALTAR_AWAKENING)
             Bukkit.getScheduler().runTask(plugin,this::finishAltarAwakening);
     }
@@ -109,9 +110,10 @@ public final class DragonEventManager {
         try{for(Location location:locations)spawned.add(location.getWorld().spawn(location,EnderCrystal.class,c->{c.setShowingBottom(true);c.getPersistentDataContainer().set(crystalKey,PersistentDataType.STRING,sessionId.toString());}));
             if(!battle.initiateRespawn(spawned))throw new IllegalStateException("Paper rejected the configured crystals for the vanilla respawn ritual");
         }
-        catch(RuntimeException ex){transition(DragonEventState.RECOVERY_REQUIRED);save(actor.getUniqueId(),"CRYSTAL_SPAWN_FAILURE");throw new IllegalStateException("Crystal spawning failed; event requires recovery",ex);}
+        catch(RuntimeException ex){transition(DragonEventState.RECOVERY_REQUIRED);save(actor.getUniqueId(),"CRYSTAL_SPAWN_FAILURE");notifyRecoveryRequired();throw new IllegalStateException("Crystal spawning failed; event requires recovery",ex);}
         save(actor.getUniqueId(),null);
         audit.record("EVENT_START", actor.getUniqueId().toString(), sessionId.toString());
+        Bukkit.broadcast(plugin.messages().component("event-started"));
     }
     public void trackVanillaSpawn(EnderDragon dragon,CreatureSpawnEvent.SpawnReason reason){
         if(reason!=CreatureSpawnEvent.SpawnReason.DEFAULT)return;if(state!=DragonEventState.SUMMONING&&System.currentTimeMillis()<=testVanillaUntil){dragon.getPersistentDataContainer().set(testKey,PersistentDataType.BYTE,(byte)1);dragon.customName(net.kyori.adventure.text.Component.text("Test Vanilla Dragon"));audit.record("TEST_VANILLA_DRAGON","DEVELOPER",dragon.getUniqueId().toString());return;}Location fountain=plugin.configuredLocation("altar.yml","fountain");
@@ -157,26 +159,37 @@ public final class DragonEventManager {
         audit.record("EVENT_COMPLETED","SYSTEM","All three initial souls claimed");
     }
     public String rescan(){
-        List<EnderDragon> matching=new ArrayList<>();List<EnderCrystal> crystals=new ArrayList<>();
-        for(World world:Bukkit.getWorlds()){
-            for(EnderDragon dragon:world.getEntitiesByClass(EnderDragon.class)){
-                String tag=dragon.getPersistentDataContainer().get(sessionKey,PersistentDataType.STRING);
-                if(sessionId!=null&&sessionId.toString().equals(tag))matching.add(dragon);
-            }
-            for(EnderCrystal crystal:world.getEntitiesByClass(EnderCrystal.class))if(isEventCrystal(crystal))crystals.add(crystal);
-        }
-        if(matching.size()>1){state=DragonEventState.RECOVERY_REQUIRED;save(null,"DUPLICATE_CANONICAL");return "Recovery required: multiple session dragons found";}
+        List<EnderDragon> matching=matchingSessionDragons();List<EnderCrystal> crystals=sessionCrystals();
+        if(matching.size()>1){state=DragonEventState.RECOVERY_REQUIRED;save(null,"DUPLICATE_CANONICAL");notifyRecoveryRequired();return "Recovery required: multiple session dragons found";}
         if(matching.size()==1){dragonId=matching.getFirst().getUniqueId();if(state==DragonEventState.RECOVERY_REQUIRED)transition(DragonEventState.ACTIVE);else state=DragonEventState.ACTIVE;save(null,"RESCAN");return "Recovered canonical dragon "+dragonId;}
         return "No matching dragon; "+crystals.size()+" protected session crystals found";
     }
     public String recover(){
         if(state!=DragonEventState.RECOVERY_REQUIRED)throw new IllegalStateException("Event is not awaiting recovery");
-        if(!souls.all().isEmpty()){transition(DragonEventState.ALTAR_ACTIVE);save(null,"RECOVERED_ALTAR");if(souls.unclaimedCount()==0){complete();return "Recovered completed event and dormant altar from persistent soul records";}setAltarState(AltarState.ACTIVE);return "Recovered active altar from persistent soul records";}
-        String scan=rescan();if(state==DragonEventState.ACTIVE)return scan;
-        long crystals=Bukkit.getWorlds().stream().flatMap(w->w.getEntitiesByClass(EnderCrystal.class).stream()).filter(this::isEventCrystal).count();
-        if(crystals==4){transition(DragonEventState.SUMMONING);save(null,"RECOVERED_SUMMONING");return "Recovered summoning with four session crystals";}
-        if(crystals>0)return "Recovery still required: expected four session crystals but found "+crystals+". Use clear-crystals and abort/reset after inspection";
-        transition(DragonEventState.ABORTED);save(null,"RECOVERY_ABORT");return "No canonical dragon or crystals found; event marked aborted";
+        List<EnderDragon> matching=matchingSessionDragons();List<EnderCrystal> crystals=sessionCrystals();
+        return switch(RecoveryDecision.decide(souls.all().size(),matching.size(),crystals.size())){
+            case RESTORE_ALTAR -> {
+                transition(DragonEventState.ALTAR_ACTIVE);save(null,"RECOVERED_ALTAR");
+                if(souls.unclaimedCount()==0){complete();yield "Recovered completed event and dormant altar from persistent soul records";}
+                setAltarState(AltarState.ACTIVE);yield "Recovered active altar from persistent soul records";
+            }
+            case RESTORE_ACTIVE_DRAGON -> {
+                dragonId=matching.getFirst().getUniqueId();transition(DragonEventState.ACTIVE);save(null,"RESCAN");
+                yield "Recovered canonical dragon "+dragonId;
+            }
+            case RESUME_SUMMONING -> {
+                transition(DragonEventState.SUMMONING);save(null,"RECOVERED_SUMMONING");
+                yield "Recovered summoning with four session crystals";
+            }
+            case REQUIRE_MANUAL_REPAIR -> {
+                if(matching.size()>1){save(null,"DUPLICATE_CANONICAL");yield "Recovery required: multiple session dragons found";}
+                yield "Recovery still required: expected four session crystals but found "+crystals.size()+". Use clear-crystals and abort/reset after inspection";
+            }
+            case ABORT -> {
+                transition(DragonEventState.ABORTED);save(null,"RECOVERY_ABORT");
+                yield "No canonical dragon or crystals found; event marked aborted";
+            }
+        };
     }
     public Optional<EnderDragon> canonicalDragon(){
         if(dragonId==null)return Optional.empty();for(World world:Bukkit.getWorlds()){Entity entity=world.getEntity(dragonId);if(entity instanceof EnderDragon dragon)return Optional.of(dragon);}return Optional.empty();
@@ -219,8 +232,21 @@ public final class DragonEventManager {
         y.set(p+"summoning-crystals",Bukkit.getWorlds().stream().flatMap(w->w.getEntitiesByClass(EnderCrystal.class).stream()).filter(this::isEventCrystal).map(c->c.getUniqueId().toString()).toList());
         store.save("event.yml", y);
     }
-    private static List<Location> cardinalLocations(Location f) {
-        return List.of(f.clone().add(3.5, 1, .5), f.clone().add(-2.5, 1, .5), f.clone().add(.5, 1, 3.5), f.clone().add(.5, 1, -2.5));
+    private List<EnderDragon> matchingSessionDragons(){
+        List<EnderDragon> matching=new ArrayList<>();
+        for(World world:Bukkit.getWorlds())for(EnderDragon dragon:world.getEntitiesByClass(EnderDragon.class)){
+            String tag=dragon.getPersistentDataContainer().get(sessionKey,PersistentDataType.STRING);
+            if(sessionId!=null&&sessionId.toString().equals(tag))matching.add(dragon);
+        }
+        return matching;
+    }
+    private List<EnderCrystal> sessionCrystals(){
+        return Bukkit.getWorlds().stream().flatMap(world->world.getEntitiesByClass(EnderCrystal.class).stream())
+                .filter(this::isEventCrystal).toList();
+    }
+    private void notifyRecoveryRequired(){
+        Bukkit.getOnlinePlayers().stream().filter(player->player.hasPermission("dragonaltar.admin.event"))
+                .forEach(player->plugin.messages().send(player,"event-recovery-required"));
     }
     private static UUID uuid(String s) { try { return s == null ? null : UUID.fromString(s); } catch (IllegalArgumentException e) { return null; } }
     private static Instant instant(String s){try{return s==null?null:Instant.parse(s);}catch(RuntimeException e){return null;}}

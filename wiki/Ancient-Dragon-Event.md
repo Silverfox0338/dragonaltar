@@ -12,7 +12,7 @@ Run:
 /dragon event preview
 ```
 
-The preview shows the configured world and fountain, nearby player count, ScaledEnderDragon detection, altar validation, optional protection status, the three eventual souls, and every failed preflight check.
+The preview shows the configured world and fountain, nearby player count, ScaledEnderDragon detection, altar validation, protection status, the three eventual souls, and every failed preflight check.
 
 The official start is player-only:
 
@@ -32,6 +32,7 @@ The start is refused if any of these conditions is true:
 - Saved altar setup is invalid
 - The fountain is missing or not a valid End fountain
 - The four crystal points are missing or invalid
+- Internal protection is required but disabled or not configured with same-world corners
 - An Ender Dragon battle is already running
 - A respawn sequence is already in progress
 - A dragon is already alive in the fountain world

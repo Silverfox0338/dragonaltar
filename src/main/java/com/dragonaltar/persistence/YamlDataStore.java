@@ -26,7 +26,6 @@ public final class YamlDataStore implements AutoCloseable {
         Files.createDirectories(dataDirectory);
         Files.createDirectories(plugin.getDataFolder().toPath().resolve("backups"));
         Files.createDirectories(plugin.getDataFolder().toPath().resolve("logs"));
-        Files.createDirectories(plugin.getDataFolder().toPath().resolve("schematics"));
         for (String name : new String[]{"event.yml", "altar-state.yml", "souls.yml", "players.yml",
                 "rituals.yml", "cooldowns.yml", "pending-transfers.yml", "consequences.yml"}) {
             Path path = dataDirectory.resolve(name);
@@ -54,9 +53,6 @@ public final class YamlDataStore implements AutoCloseable {
         }, writer);
     }
 
-    public void saveNow(String name, YamlConfiguration yaml) throws IOException {
-        saveAtomic(dataDirectory.resolve(name), yaml.saveToString());
-    }
     public void flush(){
         try{writer.submit(()->{}).get(10,TimeUnit.SECONDS);}
         catch(InterruptedException e){Thread.currentThread().interrupt();throw new IllegalStateException("Persistence flush interrupted",e);}

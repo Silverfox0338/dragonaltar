@@ -1,12 +1,11 @@
 # Initial-soul ritual. All phase durations are server ticks.
-config-version: 2
+config-version: 3
 # INVENTORY_CONSUME, PEDESTAL_DEPOSIT, or HYBRID.
 offering-mode: INVENTORY_CONSUME
 offerings:
   - id: elytra
     material: ELYTRA
     amount: 1
-    durability-mode: ANY
     display-name: '<light_purple>Elytra</light_purple>'
   - material: NETHER_STAR
     id: nether-star
@@ -25,7 +24,6 @@ offerings:
     amount: 4
     display-name: '<light_purple>Echo Shards</light_purple>'
 elytra:
-  accept-any-durability: true
   accept-enchanted: true
   accept-renamed: true
   accept-custom-lore: true

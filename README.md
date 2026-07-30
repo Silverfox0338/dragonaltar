@@ -2,7 +2,7 @@
 
 DragonAltar is a Paper plugin for an SMP-wide Ancient Dragon storyline. It runs a protected vanilla Ender Dragon respawn ritual, awakens a configured altar, creates exactly three persistent Dragon Souls, and keeps Akuma, Rev, and Lamari circulating through rituals, inheritance, recovery, and reincarnation.
 
-DragonAltar 1.4.18 targets Paper 1.21.4 and Java 21.
+DragonAltar 1.4.19 targets Paper 1.21.4 and Java 21.
 
 ## Highlights
 
@@ -14,7 +14,7 @@ DragonAltar 1.4.18 targets Paper 1.21.4 and Java 21.
 - Persistent shared ultimate and resonance cooldowns
 - Per-player HUD, sound, title, screen-effect, particle, and minimal-effects controls
 - Bounded targeting and presentation with no real explosions or permanent terrain damage
-- Optional PlaceholderAPI, WorldEdit, and ScaledEnderDragon compatibility
+- Optional PlaceholderAPI and ScaledEnderDragon compatibility
 - Versioned configuration that merges new defaults without replacing administrator edits
 
 ## The three Dragonborn
@@ -32,7 +32,6 @@ All three retain Wings and Roar. Their fifth abilities consume the full 100-poin
 - Paper 1.21.4
 - Java 21
 - Optional: PlaceholderAPI 2.11.6 or compatible
-- Optional: WorldEdit 7.3.10 or compatible
 - Optional: ScaledEnderDragon
 
 Paper and optional plugin APIs are provided dependencies and are not bundled in the DragonAltar JAR.
@@ -40,7 +39,7 @@ Paper and optional plugin APIs are provided dependencies and are not bundled in 
 ## Installation
 
 1. Stop the Paper server.
-2. Copy `DragonAltar-1.4.18.jar` into the server's `plugins` directory.
+2. Copy `DragonAltar-1.4.19.jar` into the server's `plugins` directory.
 3. Start the server once to create configuration and data directories.
 4. Review `plugins/DragonAltar/config.yml` and the other generated YAML files.
 5. Run `/dragon setup begin` and record the altar, interaction, ritual, arrival, fountain, and crystal locations.
@@ -61,7 +60,7 @@ The guided setup records exact coordinates, world names, world UUIDs, yaw, and p
 - End fountain
 - North, south, east, and west crystal positions
 
-The End fountain and crystal ring are validated before the official event starts. A schematic and DragonAltar's internal cuboid protection are optional and disabled by default.
+The End fountain and crystal ring are validated before the official event starts. DragonAltar's internal cuboid protection is optional by default and can be required for the event.
 
 The initial ritual consumes the configured recipe. Its default accepts one Elytra, one Nether Star, 16 Dragon's Breath, eight End Crystals, and four Echo Shards. Interrupted consumption is persisted and refunded exactly, including item metadata. Use `/dragon refunds` if inventory capacity prevented a complete refund.
 
@@ -85,6 +84,11 @@ Administrative branches cover event, setup, altar, ritual, soul, ability, protec
 
 The bundled defaults are conservative and versioned. On load, missing keys are merged into the installed files. Existing administrator values are preserved. Targeted migrations replace only known former shipped defaults or renamed settings; customized values at the new paths win.
 
+Version 1.4.19 removes settings and integration declarations that no longer have
+a gameplay path. Older installed YAML files may still show retired keys because
+DragonAltar does not delete administrator entries during a normal upgrade. Those
+keys are ignored and may be removed after making a backup.
+
 Runtime ownership is stored separately under `plugins/DragonAltar/data/`. Do not edit runtime data while the server is running. Back up both configuration and `data/` before an upgrade.
 
 For configuration sections, units, production guidance, migrations, upgrade steps, and rollback steps, see [CONFIGURATION.md](CONFIGURATION.md).
@@ -105,8 +109,6 @@ Minimal effects suppress nonessential visuals while retaining combat state in th
 
 PlaceholderAPI exposes public soul and status placeholders. Public soul placeholders return Akuma, Rev, or Lamari; the numbered persistence key is available only through the explicitly named internal placeholder.
 
-WorldEdit is optional. DragonAltar does not require it for setup or event validation.
-
 ScaledEnderDragon is detected by plugin name. DragonAltar starts the real vanilla respawn sequence and leaves scaling, combat, and rewards to the integration. Remove obtainable dragon egg rewards from ScaledEnderDragon's rewards configuration.
 
 See [API.md](API.md) for the Bukkit service, immutable state queries, events, and
@@ -119,7 +121,7 @@ complete starter add-on.
 mvn clean package
 ```
 
-The release JAR is written to `target/DragonAltar-1.4.18.jar`. Maven compiles with `--release 21`, runs the JUnit suite, filters only `plugin.yml`, and produces deterministic archive timestamps.
+The release JAR is written to `target/DragonAltar-1.4.19.jar`. Maven compiles with `--release 21`, runs the JUnit suite, filters only `plugin.yml`, and produces deterministic archive timestamps.
 
 ## License and add-ons
 

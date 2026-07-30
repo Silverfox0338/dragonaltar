@@ -1,5 +1,5 @@
 # DragonAltar general configuration. Runtime state is stored under data/.
-config-version: 2
+config-version: 3
 server-mode: BETA
 safety:
   # Operators do not bypass this gate.
@@ -32,9 +32,8 @@ instability:
   teleport-radius: 32
   bossbar-coordinate-update-seconds: 7
 forced-removal-ritual:
-  # Put 128 Phantom Membranes, 4 Potions of Weakness, 1 Nether Star,
+  # Put 128 Phantom Membranes, one Potion of Weakness per caller pad, 1 Nether Star,
   # and 1 Netherite Block in the completed player-built altar chest.
-  participant-count: 4
   selection-timeout-seconds: 60
   animation-duration-ticks: 160
   backfire-limbo-hours: 12

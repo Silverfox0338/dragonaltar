@@ -15,7 +15,7 @@ class AbilityConfigResourcesTest {
         YamlConfiguration abilities=load("abilities.yml");
         YamlConfiguration messages=load("messages.yml");
 
-        assertEquals(6,abilities.getInt("config-version"));
+        assertEquals(7,abilities.getInt("config-version"));
         assertEquals(100,abilities.getInt("energy.maximum"));
         assertTrue(abilities.getDouble("abilities.absolute-zero.shatter-bonus-damage")>0);
         assertTrue(abilities.getInt("abilities.infernos-wrath.maximum-mobility-ticks")
@@ -32,7 +32,7 @@ class AbilityConfigResourcesTest {
         assertTrue(abilities.getInt("resonances.glacial-bastion.ward-charges")>0);
         assertTrue(abilities.getDouble("resonances.volcanic-aegis.retaliation-damage")>0);
         assertTrue(abilities.getInt("resonances.dragon-trinity.pulse-interval-ticks")>0);
-        assertEquals(7,messages.getInt("config-version"));
+        assertEquals(8,messages.getInt("config-version"));
         assertTrue(messages.getString("energy-hud","").contains("<status>"));
         assertTrue(messages.getString("energy-hud","").contains("<resonance_cooldown>"));
     }

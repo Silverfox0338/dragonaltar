@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.4.19 - 2026-07-29
+
+- Removed the unused WorldEdit dependency, soft dependency, schematic settings,
+  setup checks, and related documentation.
+- Removed old configuration options that no longer controlled gameplay,
+  including inactive abilities, display motion settings, Focus protection
+  switches, Elytra durability switches, and the forced-removal participant
+  count.
+- Made `internal-protection.required-for-event` an active event-start
+  requirement and migrated the former protection switch.
+- Fired the compatibility soul-transfer event from the real transfer path while
+  keeping both transfer events cancellable.
+- Connected the player-only, setup warning, event start, recovery warning, and
+  ritual error messages to the places where players and staff need them.
+- Removed the unused message prefix and egg hologram text.
+- Made the Mother Soul caller count and required weakness potions follow the
+  caller-pad layout automatically.
+- Connected the tested recovery decision rules to live event recovery.
+- Removed unused ritual planning code, old combat tracking code, persistence
+  helpers, getters, and their tests.
+- Updated the README, release documents, configuration reference, and wiki to
+  match the supported 1.4.19 behavior.
+
 ## 1.4.18 - 2026-07-29
 
 - Added the DragonAltar noncommercial license and a separate permission for free
@@ -24,6 +47,7 @@
 ## 1.4.16 - 2026-07-29
 
 First public changelog baseline. DragonAltar was a private project before 1.4.16, so earlier private releases are intentionally not reconstructed here.
+*(Forgot to bump up the number in earlier commits sry yall ._.)*
 
 - Finalized Paper 1.21.4 and Java 21 release metadata.
 - Produces the `DragonAltar-1.4.16.jar` distribution name.

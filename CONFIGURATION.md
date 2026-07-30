@@ -63,7 +63,15 @@ On startup DragonAltar:
 6. Advances `config-version`.
 7. Preserves administrator values already present at current paths.
 
-Targeted migrations cover the original beta ritual recipe, former removal-ritual messages, HUD status and resonance fields, resonance renamed tunables, and Rev version 6 timing and combat settings. Known shipped defaults may advance to their replacement. Customized values are retained wherever a safe mapping exists.
+Targeted migrations cover the original beta ritual recipe, former removal-ritual messages, HUD status and resonance fields, resonance renamed tunables, Rev version 6 timing and combat settings, and the former altar-protection switch. Known shipped defaults may advance to their replacement. Customized values are retained wherever a safe mapping exists.
+
+When `internal-protection.required-for-event` is true, event validation requires internal protection to be enabled with both cuboid corners configured in the same world.
+
+Fresh 1.4.19 configuration files omit retired settings and integrations. An
+older installed file may still contain those keys because normal upgrades do
+not delete administrator entries. They are ignored and can be removed after a
+backup. The current supported paths are listed in the wiki configuration
+reference.
 
 Deleting a key intentionally causes the packaged default to return at the next load. To permanently disable a feature, use its documented boolean or zero value where validation permits.
 

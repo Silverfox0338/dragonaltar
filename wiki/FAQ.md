@@ -42,15 +42,15 @@ It is the privacy-safe public label for a soul without a public holder that is w
 
 ### Does DragonAltar build the altar?
 
-No. It records your existing structure's points and creates protected display entities. WorldEdit detection does not add a schematic paste workflow in 1.4.18.
+No. Build the physical altar first, then record its locations through the guided setup.
 
 ### Is the altar egg a real dragon egg block?
 
 No. It is a persistent `BlockDisplay`. Players cannot pick it up.
 
-### Why does `/dragon protection enable` still show disabled?
+### Why does the event say internal protection is required?
 
-The shipped `internal-protection.enabled` key takes precedence over the legacy `protection.enabled` value written by that command. Set `internal-protection.enabled: true`, then reload or restart.
+When `internal-protection.required-for-event` is true, protection must be enabled and both cuboid corners must be configured in the same world. Use `/dragon protection enable`, `setpos1`, and `setpos2`, then run `/dragon event preview` again.
 
 ### Can the console start the official event?
 
@@ -102,7 +102,7 @@ DragonAltar is owned by Silverfox0338.
 
 ## Add-on developer questions
 
-### What API version ships with DragonAltar 1.4.18?
+### What API version ships with DragonAltar 1.4.19?
 
 API contract `2.0`.
 

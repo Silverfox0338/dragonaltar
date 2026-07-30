@@ -71,7 +71,12 @@ public final class DragonSoulService {
         long embodied=souls.values().stream().filter(soul->soul.holder()!=null).count();
         if(target.holder()==null&&duplicate.isEmpty()&&embodied>=SoulIdentity.MAX_DRAGONBORN)
             throw new IllegalStateException("Only three Dragonborn may exist at once");
-        UUID old=target.holder();if(old!=null&&!old.equals(player)){DragonSoulTransferStartEvent event=new DragonSoulTransferStartEvent(id,old,player);Bukkit.getPluginManager().callEvent(event);if(event.isCancelled())throw new IllegalStateException("Soul transfer cancelled by another plugin");}
+        UUID old=target.holder();if(old!=null&&!old.equals(player)){
+            DragonSoulTransferStartEvent startEvent=new DragonSoulTransferStartEvent(id,old,player);Bukkit.getPluginManager().callEvent(startEvent);
+            if(startEvent.isCancelled())throw new IllegalStateException("Soul transfer cancelled by another plugin");
+            DragonSoulTransferEvent compatibilityEvent=new DragonSoulTransferEvent(id,old,player);Bukkit.getPluginManager().callEvent(compatibilityEvent);
+            if(compatibilityEvent.isCancelled())throw new IllegalStateException("Soul transfer cancelled by another plugin");
+        }
         target.assign(player, reason); persist(); audit.record("SOUL_ASSIGNED", player.toString(), id + " " + reason);
         if(old==null)Bukkit.getPluginManager().callEvent(new DragonbornGainEvent(player,id));else if(!old.equals(player)){Bukkit.getPluginManager().callEvent(new DragonbornLoseEvent(old,id));Bukkit.getPluginManager().callEvent(new DragonbornGainEvent(player,id));Bukkit.getPluginManager().callEvent(new DragonSoulTransferCompleteEvent(id,old,player));}
     }

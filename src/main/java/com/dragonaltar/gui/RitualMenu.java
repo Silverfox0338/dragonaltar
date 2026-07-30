@@ -31,7 +31,7 @@ public final class RitualMenu implements Listener {
         if(!(event.getView().getTopInventory().getHolder(false) instanceof MenuHolder))return;event.setCancelled(true);
         if(!(event.getWhoClicked() instanceof Player player)||event.getClickedInventory()!=event.getView().getTopInventory()||event.getCurrentItem()==null)return;
         String action=event.getCurrentItem().getItemMeta().getPersistentDataContainer().get(buttonKey,PersistentDataType.STRING);if(action==null)return;
-        if(action.equals("close"))player.closeInventory();else if(action.equals("confirm")){player.closeInventory();try{plugin.rituals().start(player);}catch(IllegalStateException ex){player.sendMessage(ex.getMessage());}}
+        if(action.equals("close"))player.closeInventory();else if(action.equals("confirm")){player.closeInventory();try{plugin.rituals().start(player);}catch(IllegalStateException ex){plugin.messages().send(player,"ritual-error","reason",ex.getMessage()==null?"Unknown error":ex.getMessage());}}
     }
     @EventHandler public void drag(InventoryDragEvent event){if(event.getView().getTopInventory().getHolder(false) instanceof MenuHolder)event.setCancelled(true);}
     private static String pretty(String id){String[] words=id.split("-");StringJoiner joiner=new StringJoiner(" ");for(String word:words)joiner.add(word.isEmpty()?word:Character.toUpperCase(word.charAt(0))+word.substring(1));return joiner.toString();}

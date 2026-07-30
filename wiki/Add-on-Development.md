@@ -1,6 +1,6 @@
 # Building a DragonAltar Add-on
 
-DragonAltar 1.4.18 publishes API contract `2.0` through Bukkit's `ServicesManager`. Build against the service interface and `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to its implementation, or import gameplay implementation packages.
+DragonAltar 1.4.19 publishes API contract `2.0` through Bukkit's `ServicesManager`. Build against the service interface and `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to its implementation, or import gameplay implementation packages.
 
 ## License rules
 
@@ -63,7 +63,7 @@ Use Java 21 and mark DragonAltar and Paper as `provided`:
     <dependency>
       <groupId>com.dragonaltar</groupId>
       <artifactId>dragonaltar</artifactId>
-      <version>1.4.18</version>
+      <version>1.4.19</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

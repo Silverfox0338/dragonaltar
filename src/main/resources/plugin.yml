@@ -4,7 +4,7 @@ main: com.dragonaltar.DragonAltarPlugin
 api-version: '1.21'
 description: Persistent Dragonborn souls, rituals, abilities, and an Ancient Dragon storyline
 authors: [DragonAltar]
-softdepend: [PlaceholderAPI, WorldEdit, ScaledEnderDragon]
+softdepend: [PlaceholderAPI, ScaledEnderDragon]
 commands:
   dragon:
     description: DragonAltar command

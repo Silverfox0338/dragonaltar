@@ -53,7 +53,6 @@ DragonAltar also creates:
 
 - `backups` for developer command snapshots
 - `logs` for local operational auditing
-- `schematics` as a compatibility directory
 
 Operational diagnostics can contain server and player information. Restrict these directories to trusted server owners.
 
@@ -77,7 +76,7 @@ The public API maps soul state to Held, Dormant, Limbo, or Fractured. When holde
 
 Do not try to reverse that redaction by combining diagnostics, data files, permission state, placeholders, or logs.
 
-PlaceholderAPI's 1.4.18 expansion reads live state directly. Keep its player-scoped placeholders in the subject's own HUD and use the public API snapshots for shared dashboards.
+PlaceholderAPI's 1.4.19 expansion reads live state directly. Keep its player-scoped placeholders in the subject's own HUD and use the public API snapshots for shared dashboards.
 
 ## Retention and deletion
 

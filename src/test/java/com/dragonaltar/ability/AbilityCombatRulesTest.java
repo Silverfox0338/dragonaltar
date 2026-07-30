@@ -38,31 +38,6 @@ class AbilityCombatRulesTest {
     }
 
     @Test
-    void infernoRewardsOncePerTargetAndNeverPastTotalCap() {
-        var tracker = new AbilityCombatRules.InfernoTracker();
-        UUID rev = UUID.randomUUID(), first = UUID.randomUUID(), second = UUID.randomUUID();
-        tracker.beginPursuit(rev, 6_000, 8_000);
-        tracker.mark(first, rev, 10_000);
-        tracker.mark(second, rev, 10_000);
-
-        assertEquals(7_500, tracker.reward(first, rev, 1_000, 1_500).speedExpiresAtMillis());
-        assertFalse(tracker.reward(first, rev, 1_000, 1_500).granted());
-        var capped = tracker.reward(second, rev, 1_000, 1_500);
-        assertTrue(capped.granted());
-        assertEquals(8_000, capped.speedExpiresAtMillis());
-    }
-
-    @Test
-    void anotherPlayerCannotClaimInfernoReward() {
-        var tracker = new AbilityCombatRules.InfernoTracker();
-        UUID rev = UUID.randomUUID(), target = UUID.randomUUID();
-        tracker.beginPursuit(rev, 6_000, 8_000);
-        tracker.mark(target, rev, 10_000);
-        assertFalse(tracker.reward(target, UUID.randomUUID(), 1_000, 1_000).granted());
-        assertTrue(tracker.reward(target, rev, 1_000, 1_000).granted());
-    }
-
-    @Test
     void bulwarkStoresConfiguredPreventedFractionWithHardCap() {
         assertEquals(3.5, AbilityCombatRules.storedBulwarkDamage(0, 10, .35, 16), .0001);
         assertEquals(16, AbilityCombatRules.storedBulwarkDamage(15, 10, .35, 16), .0001);

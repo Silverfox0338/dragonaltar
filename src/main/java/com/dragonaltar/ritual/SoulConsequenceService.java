@@ -121,16 +121,9 @@ public final class SoulConsequenceService implements Listener {
         return ritualCasts;
     }
 
-    public long ritualCasts() { return ritualCasts; }
-
     public Optional<Instant> limboReleaseAt(String soulId) {
         LimboRecord record = limbo.get(soulId);
         return record == null ? Optional.empty() : Optional.of(Instant.ofEpochMilli(record.releaseAt()));
-    }
-
-    public Optional<UUID> limboFormerHolder(String soulId) {
-        LimboRecord record = limbo.get(soulId);
-        return record == null ? Optional.empty() : Optional.ofNullable(record.formerHolder());
     }
 
     public boolean shouldFracture() {
