@@ -203,7 +203,7 @@ Use `all` or omit the ability id to clear all cooldowns.
 | Syntax | Sender | Permission | Purpose | Safety |
 |---|---|---|---|---|
 | `/dragon protection status` | Either | `dragonaltar.admin.protection` | Show enabled and configured status | Read-only |
-| `/dragon protection validate` | Either | `dragonaltar.admin.protection` | Same status path in 1.4.21 | Read-only |
+| `/dragon protection validate` | Either | `dragonaltar.admin.protection` | Same status path in 1.4.22 | Read-only |
 | `/dragon protection enable` | Either | `dragonaltar.admin.protection` | Enable `internal-protection.enabled` | Immediate |
 | `/dragon protection disable` | Either | `dragonaltar.admin.protection` | Disable `internal-protection.enabled` | General confirmation |
 | `/dragon protection setpos1` | Player | `dragonaltar.admin.protection` | Save current location as corner 1 | General confirmation |

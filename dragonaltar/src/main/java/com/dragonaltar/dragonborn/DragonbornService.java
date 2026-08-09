@@ -3,6 +3,7 @@ package com.dragonaltar.dragonborn;
 import com.dragonaltar.soul.DragonSoulService;
 import com.dragonaltar.soul.SoulIdentity;
 import com.dragonaltar.config.ConfigService;
+import com.dragonaltar.compat.ServerAttributes;
 import com.dragonaltar.player.PlayerDataService;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.*;
@@ -55,7 +56,7 @@ public final class DragonbornService {
 			remove(player);
 			return;
 		}
-		AttributeInstance max = player.getAttribute(Attribute.MAX_HEALTH);
+		AttributeInstance max = player.getAttribute(ServerAttributes.MAX_HEALTH);
 		if (max != null && max.getModifier(healthKey) == null) {
 			double hearts = config.file("abilities.yml").getDouble("passives.additional-hearts", 2);
 			max.addTransientModifier(
@@ -72,12 +73,12 @@ public final class DragonbornService {
 		refreshEnvironmentalPassives(player);
 	}
 	public void remove(Player player) {
-		AttributeInstance max = player.getAttribute(Attribute.MAX_HEALTH);
+		AttributeInstance max = player.getAttribute(ServerAttributes.MAX_HEALTH);
 		if (max != null)
 			max.removeModifier(healthKey);
 		removeSlowFalling(player);
-		removeModifier(player, Attribute.MOVEMENT_SPEED, frostveilSpeedKey);
-		removeModifier(player, Attribute.ARMOR_TOUGHNESS, stoneheartToughnessKey);
+		removeModifier(player, ServerAttributes.MOVEMENT_SPEED, frostveilSpeedKey);
+		removeModifier(player, ServerAttributes.ARMOR_TOUGHNESS, stoneheartToughnessKey);
 		removeFocusItems(player);
 	}
 	public boolean ensureFocus(Player player) {
@@ -206,18 +207,18 @@ public final class DragonbornService {
 			return;
 		if (identity.get() == SoulIdentity.AKUMA && player.getLocation().getBlock().getTemperature() <= config
 				.file("abilities.yml").getDouble("named-souls.akuma.cold-temperature-threshold", .15)) {
-			addModifier(player, Attribute.MOVEMENT_SPEED, frostveilSpeedKey,
+			addModifier(player, ServerAttributes.MOVEMENT_SPEED, frostveilSpeedKey,
 					config.file("abilities.yml").getDouble("named-souls.akuma.cold-speed-bonus", .15),
 					AttributeModifier.Operation.ADD_SCALAR);
 			player.setFreezeTicks(0);
 		} else
-			removeModifier(player, Attribute.MOVEMENT_SPEED, frostveilSpeedKey);
+			removeModifier(player, ServerAttributes.MOVEMENT_SPEED, frostveilSpeedKey);
 		if (identity.get() == SoulIdentity.LAMARI)
-			addModifier(player, Attribute.ARMOR_TOUGHNESS, stoneheartToughnessKey,
+			addModifier(player, ServerAttributes.ARMOR_TOUGHNESS, stoneheartToughnessKey,
 					config.file("abilities.yml").getDouble("named-souls.lamari.armor-toughness", 4),
 					AttributeModifier.Operation.ADD_NUMBER);
 		else
-			removeModifier(player, Attribute.ARMOR_TOUGHNESS, stoneheartToughnessKey);
+			removeModifier(player, ServerAttributes.ARMOR_TOUGHNESS, stoneheartToughnessKey);
 	}
 	private static void addModifier(Player player, Attribute attribute, NamespacedKey key, double amount,
 			AttributeModifier.Operation operation) {

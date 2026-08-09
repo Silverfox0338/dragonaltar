@@ -1,6 +1,6 @@
 # Configuration Reference
 
-DragonAltar 1.4.21 ships six editable YAML files. Each has a `config-version`. Runtime state is stored separately under `plugins/DragonAltar/data` and uses `data-version`.
+DragonAltar 1.4.22 ships six editable YAML files. Each has a `config-version`. Runtime state is stored separately under `plugins/DragonAltar/data` and uses `data-version`.
 
 > Do not edit runtime data while Paper is running. Do not replace installed configuration with fresh bundled files during an upgrade.
 
@@ -99,7 +99,7 @@ Shipped `config-version`: `4`.
 
 ### Structure and protection keys
 
-| Path | Default | 1.4.21 behavior |
+| Path | Default | 1.4.22 behavior |
 |---|---:|---|
 | `internal-protection.enabled` | `false` | Active switch for the cuboid protection listener |
 | `internal-protection.required-for-event` | `false` | When true, event validation requires enabled protection and same-world corners |

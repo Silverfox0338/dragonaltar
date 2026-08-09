@@ -1,5 +1,7 @@
 package com.dragonaltar.ritual;
 
+import com.dragonaltar.compat.ServerAttributes;
+
 import com.dragonaltar.DragonAltarPlugin;
 import com.dragonaltar.persistence.YamlDataStore;
 import com.dragonaltar.soul.DragonSoul;
@@ -293,10 +295,10 @@ public final class SoulConsequenceService implements Listener {
 				spawned.setPersistent(true);
 				spawned.setRemoveWhenFarAway(false);
 				spawned.getPersistentDataContainer().set(fracturedSoulKey, PersistentDataType.STRING, soulId);
-				setBase(spawned, Attribute.MAX_HEALTH, 150);
-				setBase(spawned, Attribute.MOVEMENT_SPEED, .2875);
-				setBase(spawned, Attribute.ATTACK_DAMAGE, ThreadLocalRandom.current().nextDouble(8, 12.0001));
-				setBase(spawned, Attribute.KNOCKBACK_RESISTANCE, .4);
+				setBase(spawned, ServerAttributes.MAX_HEALTH, 150);
+				setBase(spawned, ServerAttributes.MOVEMENT_SPEED, .2875);
+				setBase(spawned, ServerAttributes.ATTACK_DAMAGE, ThreadLocalRandom.current().nextDouble(8, 12.0001));
+				setBase(spawned, ServerAttributes.KNOCKBACK_RESISTANCE, .4);
 				spawned.setHealth(150);
 			});
 			FracturedRecord record = new FracturedRecord(mob.getUniqueId(), mob.getLocation(), old.nextTeleport());
@@ -373,7 +375,7 @@ public final class SoulConsequenceService implements Listener {
 			ensureBar(soulId, mob);
 			return;
 		}
-		AttributeInstance max = mob.getAttribute(Attribute.MAX_HEALTH);
+		AttributeInstance max = mob.getAttribute(ServerAttributes.MAX_HEALTH);
 		double maximum = max == null ? 150 : max.getValue();
 		bar.progress((float) Math.max(0, Math.min(1, mob.getHealth() / maximum)));
 		if (coordinates) {

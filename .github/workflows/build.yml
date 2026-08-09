@@ -25,6 +25,8 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+      - name: Compile against newest supported Paper API
+        run: mvn --batch-mode --no-transfer-progress -Dpaper.api.version=1.21.11-R0.1-SNAPSHOT -DskipTests clean compile
       - name: Verify release build
         run: mvn --batch-mode --no-transfer-progress clean verify
       - name: Verify release JAR

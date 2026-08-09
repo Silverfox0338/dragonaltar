@@ -1,6 +1,6 @@
-# DragonAltar 1.4.21 Release Notes
+# DragonAltar 1.4.22 Release Notes
 
-DragonAltar brings a persistent three-soul Dragonborn storyline to Paper 1.21.4. Server staff configure a physical altar and End fountain, run one protected vanilla dragon respawn event, and release Akuma, Rev, and Lamari into a long-running cycle of rituals, inheritance, reincarnation, instability, and recovery.
+DragonAltar brings a persistent three-soul Dragonborn storyline to Paper and Purpur 1.21 through 1.21.11. Server staff configure a physical altar and End fountain, run one protected vanilla dragon respawn event, and release Akuma, Rev, and Lamari into a long-running cycle of rituals, inheritance, reincarnation, instability, and recovery.
 
 The release includes distinct frost, hunt, and stone ability kits; full-energy ultimates; pair resonances; Dragon Trinity; shared persistent cooldowns; exact ritual refunds; accessibility controls; optional PlaceholderAPI and ScaledEnderDragon support; and a public Bukkit service and event API.
 
@@ -15,7 +15,18 @@ history interface; and register namespaced custom abilities that remain inside
 the normal DragonAltar energy and cooldown pipeline. Private staff custody and
 raw lineage are not exposed through the snapshot API.
 
-## What changed in 1.4.21
+## What changed in 1.4.22
+
+The plugin now supports the complete Paper and Purpur 1.21 release line on Java
+21. It compiles against the minimum Paper 1.21 API and resolves both generations
+of Bukkit attribute names used across these releases. CI also compiles against
+Paper 1.21.11 to protect both ends of the supported range.
+
+The matching `com.dragonaltar:dragonaltar-api:1.4.22` artifact is published for
+add-on developers. The independent runtime API contract remains `3.0`, with no
+breaking public interface, event, model, or add-on hook changes in this release.
+
+## Earlier 1.4.21 changes
 
 API 2.2 adds `DragonAddonItem.onSoulLoss()` with `NONE`, `UNEQUIP`, `DROP`, and
 `DESTROY` policies. DragonAltar safely handles online and offline soul loss,
@@ -53,11 +64,12 @@ and can cancel the transfer.
 
 Requirements:
 
-- Paper 1.21.4
+- Paper or Purpur 1.21-1.21.11
 - Java 21
 
 Install the JAR in `plugins`, start once, complete `/dragon setup begin`, save the guided setup, and require `/dragon setup validate` to report ready before starting the official event.
 
 Important release gates:
 
-- Complete live validation on Paper 1.21.4 with Java 21 before production use.
+- Complete live validation on the intended Paper or Purpur 1.21.x server with
+  Java 21 before production use.

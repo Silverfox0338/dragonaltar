@@ -1,11 +1,52 @@
 # Changelog
 
+## 1.4.22 - 2026-08-09
+
+### Compatibility
+
+- Expanded the supported server range from Paper 1.21.4 to Paper and Purpur
+  1.21 through 1.21.11 on Java 21.
+- Changed the compile-time Paper dependency to the oldest supported 1.21 API so
+  accidental use of APIs introduced by later 1.21 releases now fails during the
+  build instead of failing when the plugin runs on an older server.
+- Added a small runtime compatibility layer for the Bukkit attribute rename
+  introduced during the 1.21 release line. Dragonborn health, Frostveil movement
+  speed, Stoneheart armor toughness, fractured-soul combat attributes, ability
+  health calculations, and dragon diagnostics now resolve both the original
+  `GENERIC_*` names and their newer replacements.
+- Kept the packaged plugin descriptor at `api-version: '1.21'`, allowing the same
+  JAR to load throughout the supported 1.21 server family.
+
+### API, build, and documentation
+
+- Published the matching `com.dragonaltar:dragonaltar-api:1.4.22` Maven artifact.
+  The runtime API contract remains `3.0`; this release makes no breaking public
+  interface, event, model, or add-on hook changes.
+- Compiled the public API and the external add-on consumer fixture against the
+  minimum Paper 1.21 API so add-ons do not inherit an unnecessary 1.21.4 floor.
+- Added a CI compile pass against Paper 1.21.11 while retaining the full release
+  verification against the minimum Paper 1.21 API.
+- Updated the README, installation guide, administrator guide, add-on development
+  examples, and wiki home page to document the complete compatibility range.
+- Updated add-on Maven examples to compile against the minimum 1.21 Paper API.
+- Verified the compatibility build with all 98 plugin tests, the API boundary
+  test, external add-on consumer compilation, formatting checks, release-JAR
+  inspection, and SpotBugs analysis with no findings.
+
 ## 1.4.21 - 2026-08-08
 
 - Added API 2.2 per-item soul-loss policies for leaving, unequipping, dropping,
   or destroying registered soul-bound equipment.
 - Reconciled offline losses on join and add-on re-registration, including safe
   full-inventory and death/keep-inventory behavior without item duplication.
+- Promoted the public contract to API 3.0 and replaced deprecated methods whose
+  bytecode signatures exposed plugin implementation types with API-owned event,
+  soul, eligibility, and cast models.
+- Split `dragonaltar-api` into a standalone Maven artifact containing only
+  supported `com.dragonaltar.api` types, with an API-boundary test and external
+  add-on consumer fixture.
+- Added the GitHub Packages publication workflow and synchronized API artifact
+  versions with DragonAltar plugin releases.
 
 ## 1.4.20 - 2026-08-08
 

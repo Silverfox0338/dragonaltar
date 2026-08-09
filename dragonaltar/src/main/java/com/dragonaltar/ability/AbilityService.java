@@ -1,5 +1,7 @@
 package com.dragonaltar.ability;
 
+import com.dragonaltar.compat.ServerAttributes;
+
 import com.dragonaltar.ability.akuma.AbsoluteZero;
 import com.dragonaltar.ability.akuma.AkumasHush;
 import com.dragonaltar.ability.akuma.AkumasTrail;
@@ -27,7 +29,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.*;
-import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.*;
@@ -1466,7 +1467,7 @@ public final class AbilityService {
 		particleAccessible(center.clone().add(0, 1.2, 0), pulse % 2 == 0 ? Particle.END_ROD : Particle.DRAGON_BREATH,
 				resonanceInteger("dragon-trinity.pulse-particles", 72), 3, 1.2, 3, .07);
 		for (Player member : team) {
-			var health = member.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+			var health = member.getAttribute(ServerAttributes.MAX_HEALTH);
 			if (health != null)
 				member.setHealth(Math.min(health.getValue(),
 						member.getHealth() + resonanceDecimal("dragon-trinity.healing-per-pulse", 2)));
@@ -1873,7 +1874,7 @@ public final class AbilityService {
 			return false;
 		if (target instanceof Player)
 			return true;
-		double maximumHealth = Optional.ofNullable(target.getAttribute(Attribute.MAX_HEALTH))
+		double maximumHealth = Optional.ofNullable(target.getAttribute(ServerAttributes.MAX_HEALTH))
 				.map(attribute -> attribute.getValue()).orElse(0d);
 		return target instanceof Monster && maximumHealth >= decimalRoot("rev-hunt.heat.minimum-mob-max-health", 12);
 	}

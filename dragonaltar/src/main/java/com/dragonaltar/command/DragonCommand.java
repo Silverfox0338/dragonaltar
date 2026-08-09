@@ -1,5 +1,7 @@
 package com.dragonaltar.command;
 
+import com.dragonaltar.compat.ServerAttributes;
+
 import com.dragonaltar.DragonAltarPlugin;
 import com.dragonaltar.ability.DragonAbility;
 import com.dragonaltar.config.ServerMode;
@@ -150,13 +152,11 @@ public final class DragonCommand implements TabExecutor {
 			return true;
 		}
 		if (sub.equals("dragon-info")) {
-			s.sendMessage(
-					plugin.dragonEvent().canonicalDragon()
-							.map(d -> "UUID=" + d.getUniqueId() + " health=" + d.getHealth() + "/"
-									+ Objects.requireNonNull(d.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH))
-											.getValue()
-									+ " phase=" + d.getPhase())
-							.orElse("Canonical dragon not loaded"));
+			s.sendMessage(plugin.dragonEvent().canonicalDragon()
+					.map(d -> "UUID=" + d.getUniqueId() + " health=" + d.getHealth() + "/"
+							+ Objects.requireNonNull(d.getAttribute(ServerAttributes.MAX_HEALTH)).getValue() + " phase="
+							+ d.getPhase())
+					.orElse("Canonical dragon not loaded"));
 			return true;
 		}
 		s.sendMessage("Supported: status, preview, start, confirm-start, abort");

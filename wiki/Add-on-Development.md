@@ -1,7 +1,7 @@
 # Building a DragonAltar Add-on
 
-DragonAltar 1.4.21 publishes API contract `3.0` through Bukkit's
-`ServicesManager`. Build against `com.dragonaltar:dragonaltar-api:1.4.21` and use
+DragonAltar 1.4.22 publishes API contract `3.0` through Bukkit's
+`ServicesManager`. Build against `com.dragonaltar:dragonaltar-api:1.4.22` and use
 only `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to
 its implementation, or import gameplay implementation packages.
 
@@ -64,13 +64,13 @@ Use Java 21 and mark the standalone API and Paper as `provided`:
     <dependency>
       <groupId>com.dragonaltar</groupId>
       <artifactId>dragonaltar-api</artifactId>
-      <version>1.4.21</version>
+      <version>1.4.22</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>io.papermc.paper</groupId>
       <artifactId>paper-api</artifactId>
-      <version>1.21.4-R0.1-SNAPSHOT</version>
+      <version>1.21-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -107,7 +107,7 @@ permissions:
 ```
 
 The Maven artifact version follows the plugin release version. API artifact
-`1.4.21` is supplied by DragonAltar plugin `1.4.21`; the independent runtime
+`1.4.22` is supplied by DragonAltar plugin `1.4.22`; the independent runtime
 contract returned by `apiVersion()` is `3.0`. Compile against the oldest API
 artifact your add-on supports and use only `com.dragonaltar.api` types.
 

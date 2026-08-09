@@ -29,20 +29,20 @@ and use `dragonaltar-api` as a provided dependency; do not depend on the
   <dependency>
     <groupId>com.dragonaltar</groupId>
     <artifactId>dragonaltar-api</artifactId>
-    <version>1.4.21</version>
+    <version>1.4.22</version>
     <scope>provided</scope>
   </dependency>
   <dependency>
     <groupId>io.papermc.paper</groupId>
     <artifactId>paper-api</artifactId>
-    <version>1.21.4-R0.1-SNAPSHOT</version>
+    <version>1.21-R0.1-SNAPSHOT</version>
     <scope>provided</scope>
   </dependency>
 </dependencies>
 ```
 
 `provided` is important: do not shade or bundle DragonAltar into an add-on.
-The API artifact version matches its plugin release (`1.4.21` here), while
+The API artifact version matches its plugin release (`1.4.22` here), while
 `api.apiVersion()` reports the independent public contract version (`3.0`).
 
 GitHub's Maven registry requires authentication. Store a GitHub username and a
