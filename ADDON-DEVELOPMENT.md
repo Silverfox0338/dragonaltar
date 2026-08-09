@@ -3,16 +3,11 @@
 This is the smallest complete add-on project. It reads the public soul state and
 registers one ability without reaching into DragonAltar internals.
 
-## 1. Install the API dependency
+## 1. Add the API dependency
 
-Until a public Maven repository is listed, clone DragonAltar and install its jar
-to your local Maven repository:
-
-```text
-mvn clean install
-```
-
-Then add DragonAltar as a provided dependency in the add-on's `pom.xml`:
+Released API artifacts are available from GitHub Packages. Add this repository
+and use `dragonaltar-api` as a provided dependency; do not depend on the
+`dragonaltar` implementation artifact:
 
 ```xml
 <properties>
@@ -20,6 +15,10 @@ Then add DragonAltar as a provided dependency in the add-on's `pom.xml`:
 </properties>
 
 <repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/silverfox0338/dragonaltar</url>
+  </repository>
   <repository>
     <id>papermc</id>
     <url>https://repo.papermc.io/repository/maven-public/</url>
@@ -29,7 +28,7 @@ Then add DragonAltar as a provided dependency in the add-on's `pom.xml`:
 <dependencies>
   <dependency>
     <groupId>com.dragonaltar</groupId>
-    <artifactId>dragonaltar</artifactId>
+    <artifactId>dragonaltar-api</artifactId>
     <version>1.4.21</version>
     <scope>provided</scope>
   </dependency>
@@ -43,6 +42,28 @@ Then add DragonAltar as a provided dependency in the add-on's `pom.xml`:
 ```
 
 `provided` is important: do not shade or bundle DragonAltar into an add-on.
+The API artifact version matches its plugin release (`1.4.21` here), while
+`api.apiVersion()` reports the independent public contract version (`3.0`).
+
+GitHub's Maven registry requires authentication. Store a GitHub username and a
+classic personal access token with `read:packages` in `~/.m2/settings.xml`; the
+server id must match the `github` repository id above:
+
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR_GITHUB_USERNAME</username>
+      <password>YOUR_CLASSIC_PERSONAL_ACCESS_TOKEN</password>
+    </server>
+  </servers>
+</settings>
+```
+
+If the repository/package is private, that GitHub account must also have read
+access. A GitHub Actions workflow in a repository granted package access can use
+its `GITHUB_TOKEN` with `packages: read` instead of storing a personal token.
 
 ## 2. Describe the Bukkit plugin
 
@@ -159,6 +180,9 @@ free. Review [LICENSE.md](LICENSE.md) before distribution.
 
 - Use only `com.dragonaltar.api` types. Internal packages may change without
   notice.
+- Compile against the oldest plugin-release API artifact you support. Compatible
+  additions stay within contract `3.x`; breaking API changes increment the
+  contract major returned by `apiVersion()`.
 - Keep registration and Bukkit world changes on the server thread.
 - Use immutable soul snapshots for player-visible information.
 - Never expose administrative event participants or private custody.

@@ -87,7 +87,7 @@ mvn clean package
 The verified JAR is written to:
 
 ```text
-target/DragonAltar-1.4.21.jar
+dragonaltar/target/DragonAltar-1.4.21.jar
 ```
 
 Maven compiles with Java release 21 and runs the JUnit suite.

@@ -31,7 +31,7 @@ jobs:
         id: artifact
         shell: bash
         run: |
-          mapfile -t jars < <(find target -maxdepth 1 -type f -name 'DragonAltar-*.jar' \
+          mapfile -t jars < <(find dragonaltar/target -maxdepth 1 -type f -name 'DragonAltar-*.jar' \
             ! -name '*-sources.jar' ! -name '*-javadoc.jar' -print)
           if [ "${#jars[@]}" -ne 1 ]; then
             echo "Expected exactly one release JAR, found ${#jars[@]}" >&2
@@ -53,6 +53,27 @@ jobs:
           fi
           echo "path=$jar_file" >> "$GITHUB_OUTPUT"
           echo "name=$(basename "$jar_file" .jar)" >> "$GITHUB_OUTPUT"
+      - name: Verify standalone API JAR
+        shell: bash
+        run: |
+          api_jar="dragonaltar-api/target/dragonaltar-api-$(mvn help:evaluate \
+            -pl dragonaltar-api -Dexpression=project.version -q -DforceStdout).jar"
+          test -f "$api_jar"
+          unexpected=$(jar tf "$api_jar" | awk '/\.class$/ && $0 !~ /^com\/dragonaltar\/api\//')
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected classes in API JAR:" >&2
+            echo "$unexpected" >&2
+            exit 1
+          fi
+          for forbidden in com/dragonaltar/soul/DragonSoul \
+            com/dragonaltar/eligibility/EligibilityService \
+            com/dragonaltar/ability/AbilityResult \
+            com/dragonaltar/dragonevent/DragonEventState; do
+            if grep -aRq "$forbidden" dragonaltar-api/target/classes; then
+              echo "API bytecode references internal type $forbidden" >&2
+              exit 1
+            fi
+          done
       - name: Upload verified JAR
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

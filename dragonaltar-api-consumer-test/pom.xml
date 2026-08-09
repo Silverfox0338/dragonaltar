@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.dragonaltar</groupId>
+    <artifactId>dragonaltar-parent</artifactId>
+    <version>1.4.21</version>
+  </parent>
+  <artifactId>dragonaltar-api-consumer-test</artifactId>
+  <name>DragonAltar API consumer contract test</name>
+  <description>Compiles an external add-on fixture without the DragonAltar implementation artifact.</description>
+  <properties>
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <spotbugs.skip>true</spotbugs.skip>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.dragonaltar</groupId>
+      <artifactId>dragonaltar-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.papermc.paper</groupId>
+      <artifactId>paper-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>

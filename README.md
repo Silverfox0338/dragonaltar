@@ -113,7 +113,8 @@ ScaledEnderDragon is detected by plugin name. DragonAltar starts the real vanill
 
 See [API.md](API.md) for the Bukkit service, immutable state queries, events, and
 custom ability hooks. [ADDON-DEVELOPMENT.md](ADDON-DEVELOPMENT.md) contains a
-complete starter add-on.
+complete starter add-on using the published
+`com.dragonaltar:dragonaltar-api:1.4.21` artifact.
 
 ## Building
 
@@ -121,7 +122,9 @@ complete starter add-on.
 mvn clean verify
 ```
 
-The release JAR is written to `target/DragonAltar-1.4.21.jar`. Maven compiles
+The server release JAR is written to
+`dragonaltar/target/DragonAltar-1.4.21.jar`; the standalone public API is written
+to `dragonaltar-api/target/dragonaltar-api-1.4.21.jar`. Maven compiles
 with `--release 21`, runs the JUnit suite, enforces deterministic formatting,
 runs high-confidence SpotBugs analysis, writes JaCoCo coverage reports, filters
 only `plugin.yml`, and produces deterministic archive timestamps.
@@ -148,17 +151,21 @@ mvn clean verify                   # run the complete release gate
   plain values before asynchronous writes are queued.
 - `soul`, `ritual`, `dragonevent`, and `dragonborn` own gameplay state
   transitions. Crash-sensitive transitions use non-coalesced ordered writes.
-- `api` contains the stable add-on surface and its guarded implementation.
-  Types under `com.dragonaltar.api` must not be moved, renamed, or changed in a
-  source- or binary-incompatible way within the current API contract.
+- `dragonaltar-api` contains only the stable add-on interfaces, events, and
+  immutable models under `com.dragonaltar.api`. The `dragonaltar` module contains
+  the guarded implementation and embeds the API classes in the server JAR.
+  Public types must not be moved, renamed, or changed incompatibly within the
+  current API contract major.
 - `DragonAltarPlugin` constructs services in dependency order, registers the
   Paper surface, starts runtime tasks only when needed, and shuts down tasks and
   temporary entities before flushing persistence.
 
 The CI workflow runs `mvn clean verify`, checks required JAR resources and the
-public API class, rejects shaded dependency classes, confirms exactly one
-release JAR, and uploads only that verified JAR. Pull requests also receive a
-dependency vulnerability review.
+public API class, verifies the standalone API boundary and external consumer
+fixture, rejects unrelated shaded classes, confirms exactly one server release
+JAR, and uploads only that verified server JAR. Pull requests also receive a
+dependency vulnerability review. Publishing the API is a separate release-only
+workflow and is never part of ordinary verification.
 
 ## License and add-ons
 

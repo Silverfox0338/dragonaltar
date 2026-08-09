@@ -60,7 +60,7 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
-	private static final String API_VERSION = "2.2";
+	private static final String API_VERSION = "3.0";
 	private static final AddonInputValidator ADDON_VALIDATOR = new AddonInputValidator();
 	private final DragonAltarPlugin plugin;
 	private final Map<Plugin, Registration> registrations = new IdentityHashMap<>();
@@ -395,12 +395,6 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
 	}
 
 	@Override
-	@Deprecated
-	public com.dragonaltar.dragonevent.DragonEventState eventState() {
-		return plugin.dragonEvent().state();
-	}
-
-	@Override
 	public String altarState() {
 		return plugin.dragonEvent().altarState().name();
 	}
@@ -409,24 +403,6 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
 	public Collection<UUID> dragonborn() {
 		return plugin.souls().all().stream().map(DragonSoul::holder).filter(Objects::nonNull)
 				.filter(id -> !privatePlayer(id)).toList();
-	}
-
-	@Override
-	@Deprecated
-	public Optional<DragonSoul> soul(String id) {
-		return Optional.empty();
-	}
-
-	@Override
-	@Deprecated
-	public Optional<DragonSoul> soulOf(UUID player) {
-		return Optional.empty();
-	}
-
-	@Override
-	@Deprecated
-	public EligibilityService.Result eligibility(Player player) {
-		return plugin.eligibility().check(player);
 	}
 
 	@Override
@@ -464,12 +440,6 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
 			return false;
 		plugin.abilities().select(player, abilityId);
 		return plugin.abilities().selected(player).equalsIgnoreCase(abilityId);
-	}
-
-	@Override
-	@Deprecated
-	public AbilityResult castSelectedAbility(Player player) {
-		return plugin.abilities().cast(player);
 	}
 
 	private DragonRitualInfo ritualInfo(RitualSession session) {

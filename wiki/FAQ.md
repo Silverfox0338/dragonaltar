@@ -104,7 +104,8 @@ DragonAltar is owned by Silverfox0338.
 
 ### What API version ships with DragonAltar 1.4.21?
 
-API contract `2.2`.
+API contract `3.0`. The Maven artifact version matches the plugin release:
+`com.dragonaltar:dragonaltar-api:1.4.21`.
 
 ### How do I get the API?
 

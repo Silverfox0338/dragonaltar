@@ -1,6 +1,9 @@
 # Building a DragonAltar Add-on
 
-DragonAltar 1.4.21 publishes API contract `2.2` through Bukkit's `ServicesManager`. Build against the service interface and `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to its implementation, or import gameplay implementation packages.
+DragonAltar 1.4.21 publishes API contract `3.0` through Bukkit's
+`ServicesManager`. Build against `com.dragonaltar:dragonaltar-api:1.4.21` and use
+only `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to
+its implementation, or import gameplay implementation packages.
 
 ## License rules
 
@@ -28,13 +31,7 @@ Read the repository `LICENSE.md` before distribution. Commercial use or another 
 
 ## Maven setup
 
-Until an authorized public Maven repository is listed, install DragonAltar into your local Maven repository:
-
-```text
-mvn clean install
-```
-
-Use Java 21 and mark DragonAltar and Paper as `provided`:
+Use Java 21 and mark the standalone API and Paper as `provided`:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -54,6 +51,10 @@ Use Java 21 and mark DragonAltar and Paper as `provided`:
 
   <repositories>
     <repository>
+      <id>github</id>
+      <url>https://maven.pkg.github.com/silverfox0338/dragonaltar</url>
+    </repository>
+    <repository>
       <id>papermc</id>
       <url>https://repo.papermc.io/repository/maven-public/</url>
     </repository>
@@ -62,7 +63,7 @@ Use Java 21 and mark DragonAltar and Paper as `provided`:
   <dependencies>
     <dependency>
       <groupId>com.dragonaltar</groupId>
-      <artifactId>dragonaltar</artifactId>
+      <artifactId>dragonaltar-api</artifactId>
       <version>1.4.21</version>
       <scope>provided</scope>
     </dependency>
@@ -77,6 +78,12 @@ Use Java 21 and mark DragonAltar and Paper as `provided`:
 ```
 
 Do not shade DragonAltar into the add-on.
+
+GitHub's Maven registry requires authentication. In `~/.m2/settings.xml`, add a
+server with id `github`, your GitHub username, and a classic personal access
+token with `read:packages`. A private repository/package also requires the
+account to have read access. In GitHub Actions, a repository granted package
+access can use `GITHUB_TOKEN` with `packages: read`.
 
 ## Bukkit metadata
 
@@ -119,9 +126,9 @@ public final class EmberToolsPlugin extends JavaPlugin {
         if (dragonAltar == null) {
             throw new IllegalStateException("DragonAltar API is unavailable");
         }
-        if (!dragonAltar.apiVersion().startsWith("2.")) {
+        if (!dragonAltar.apiVersion().startsWith("3.")) {
             throw new IllegalStateException(
-                    "EmberTools needs DragonAltar API 2.x, found " + dragonAltar.apiVersion());
+                    "EmberTools needs DragonAltar API 3.x, found " + dragonAltar.apiVersion());
         }
 
         dragonAltar.registerAddon(this, new DragonAltarAddon(

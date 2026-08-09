@@ -1,6 +1,7 @@
 # API Reference
 
-DragonAltar 1.4.21 publishes API contract `2.2`. Load it through Bukkit:
+DragonAltar 1.4.21 publishes API contract `3.0` and the Maven artifact
+`com.dragonaltar:dragonaltar-api:1.4.21`. Load the service through Bukkit:
 
 ```java
 DragonAltarApi api = Bukkit.getServicesManager().load(DragonAltarApi.class);
@@ -9,7 +10,9 @@ if (api == null) {
 }
 ```
 
-All public API types are under `com.dragonaltar.api`, including its `addon`, `event`, and `model` subpackages. New add-ons should not import the implementation types exposed only by deprecated compatibility methods.
+All supported public API types are under `com.dragonaltar.api`, including its
+`addon`, `event`, and `model` subpackages. Do not import any other DragonAltar
+package.
 
 Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are non-null unless the method explicitly says otherwise.
 
@@ -19,7 +22,7 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 
 | Method | Parameters | Return | Notes |
 |---|---|---|---|
-| `String apiVersion()` | None | `2.2` | API contract version, independent of plugin release |
+| `String apiVersion()` | None | `3.0` | API contract version, independent of plugin release |
 | `DragonEventInfo event()` | None | Immutable event snapshot | State, altar state, optional session UUID, optional canonical dragon UUID |
 | `Optional<DragonRitualInfo> activeRitual()` | None | Active initial ritual | Empty when inactive; consumed item data is never included |
 | `Collection<DragonSoulInfo> souls()` | None | Immutable list of all public soul snapshots | Exactly the currently created canonical souls |
@@ -65,17 +68,12 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 | `String altarState()` | Altar enum name as text | Prefer `event().altarState()` when already reading the event |
 | `Collection<UUID> dragonborn()` | Public holder UUIDs | Omits holders not suitable for public presentation |
 
-### Deprecated compatibility methods
+### API 3.0 migration
 
-| Method | Current behavior | Replacement |
-|---|---|---|
-| `DragonEventState eventState()` | Returns an implementation enum | `event().state()` |
-| `Optional<DragonSoul> soul(String id)` | Always empty | `soulInfo(String)` |
-| `Optional<DragonSoul> soulOf(UUID player)` | Always empty | `soulInfoOf(UUID)` |
-| `EligibilityService.Result eligibility(Player player)` | Returns an implementation type | `eligibilityInfo(Player)` |
-| `AbilityResult castSelectedAbility(Player player)` | Runs the old internal result path | `cast(Player)` |
-
-The implementation packages named in these signatures are not supported add-on APIs. They remain only for binary compatibility.
+API 3.0 removes the deprecated `eventState()`, `soul(...)`, `soulOf(...)`,
+`eligibility(...)`, and `castSelectedAbility(...)` methods because their method
+descriptors exposed implementation classes. Use `event()`, `soulInfo(...)`,
+`soulInfoOf(...)`, `eligibilityInfo(...)`, and `cast(...)` respectively.
 
 ## Add-on types
 
@@ -311,18 +309,11 @@ actions and dispenser armor placement.
 
 Do not construct and call DragonAltar events to force gameplay. They are notifications and cancellation points around DragonAltar-owned state changes.
 
-## `DragonAltarApiImpl`
+## Implementation boundary
 
-`com.dragonaltar.api.DragonAltarApiImpl` is a public final service implementation and Bukkit listener. It implements every `DragonAltarApi` method above.
-
-Additional public members:
-
-| Member | Purpose |
-|---|---|
-| `DragonAltarApiImpl(DragonAltarPlugin plugin)` | Main-plugin bootstrap constructor |
-| `void onPluginDisable(PluginDisableEvent event)` | Bukkit listener that unregisters a disabled owner |
-
-Add-ons must not construct, cast to, subclass, or call implementation-only lifecycle members. Load `DragonAltarApi` from `ServicesManager`.
+The service implementation is shipped only in the server plugin artifact. It is
+not part of `dragonaltar-api`; add-ons must not construct or cast to it. Load
+`DragonAltarApi` from `ServicesManager`.
 
 ## Threading and immutability
 

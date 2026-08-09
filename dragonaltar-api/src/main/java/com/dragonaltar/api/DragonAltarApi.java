@@ -1,8 +1,5 @@
 package com.dragonaltar.api;
 
-import com.dragonaltar.dragonevent.DragonEventState;
-import com.dragonaltar.eligibility.EligibilityService;
-import com.dragonaltar.soul.DragonSoul;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -15,7 +12,6 @@ import com.dragonaltar.api.model.DragonEligibilityInfo;
 import com.dragonaltar.api.model.DragonEventInfo;
 import com.dragonaltar.api.model.DragonRitualInfo;
 import com.dragonaltar.api.model.DragonSoulInfo;
-import com.dragonaltar.ability.AbilityResult;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -70,34 +66,11 @@ public interface DragonAltarApi {
 	boolean unregisterAddon(Plugin owner);
 	Collection<DragonAltarAddon> addons();
 
-	/** @deprecated use {@link #event()} to avoid implementation types. */
-	@Deprecated
-	DragonEventState eventState();
 	String altarState();
 	Collection<UUID> dragonborn();
-	/**
-	 * @deprecated raw soul access was removed to protect private administrative
-	 *             custody; this method now returns an empty result. Use
-	 *             {@link #soulInfo(String)}.
-	 */
-	@Deprecated
-	Optional<DragonSoul> soul(String id);
-	/**
-	 * @deprecated raw soul access was removed to protect private administrative
-	 *             custody; this method now returns an empty result. Use
-	 *             {@link #soulInfoOf(UUID)}.
-	 */
-	@Deprecated
-	Optional<DragonSoul> soulOf(UUID player);
-	/** @deprecated use {@link #eligibilityInfo(Player)}. */
-	@Deprecated
-	EligibilityService.Result eligibility(Player player);
 	Collection<String> abilityIds();
 	Optional<DragonAbilityInfo> ability(String id);
 	int energy(Player player);
 	int maximumEnergy();
 	boolean selectAbility(Player player, String abilityId);
-	/** @deprecated use {@link #cast(Player)}. */
-	@Deprecated
-	AbilityResult castSelectedAbility(Player player);
 }
