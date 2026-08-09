@@ -9,21 +9,23 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class ConfiguredAbilityTest {
-    @Test void sharedAbilitiesSupportEveryDragonbornSoul(){
-        DragonAbility wings=new Wings(null);
-        DragonAbility roar=new Roar(null);
+	@Test
+	void sharedAbilitiesSupportEveryDragonbornSoul() {
+		DragonAbility wings = new Wings(null);
+		DragonAbility roar = new Roar(null);
 
-        for(SoulIdentity soul:SoulIdentity.values()){
-            assertTrue(wings.supports(soul),"Wings should support "+soul);
-            assertTrue(roar.supports(soul),"Roar should support "+soul);
-        }
-    }
+		for (SoulIdentity soul : SoulIdentity.values()) {
+			assertTrue(wings.supports(soul), "Wings should support " + soul);
+			assertTrue(roar.supports(soul), "Roar should support " + soul);
+		}
+	}
 
-    @Test void soulAbilitiesRemainRestrictedToTheirKit(){
-        DragonAbility trail=new AkumasTrail(null);
+	@Test
+	void soulAbilitiesRemainRestrictedToTheirKit() {
+		DragonAbility trail = new AkumasTrail(null);
 
-        assertTrue(trail.supports(SoulIdentity.AKUMA));
-        assertFalse(trail.supports(SoulIdentity.REV));
-        assertFalse(trail.supports(SoulIdentity.LAMARI));
-    }
+		assertTrue(trail.supports(SoulIdentity.AKUMA));
+		assertFalse(trail.supports(SoulIdentity.REV));
+		assertFalse(trail.supports(SoulIdentity.LAMARI));
+	}
 }

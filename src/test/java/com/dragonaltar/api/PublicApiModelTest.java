@@ -20,86 +20,91 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PublicApiModelTest {
-    @Test
-    void eligibilityChecksAreCopied() {
-        Map<String, Boolean> source = new LinkedHashMap<>();
-        source.put("online", true);
-        DragonEligibilityInfo info = new DragonEligibilityInfo(true, source);
-        source.put("excluded", false);
+	@Test
+	void eligibilityChecksAreCopied() {
+		Map<String, Boolean> source = new LinkedHashMap<>();
+		source.put("online", true);
+		DragonEligibilityInfo info = new DragonEligibilityInfo(true, source);
+		source.put("excluded", false);
 
-        assertEquals(Map.of("online", true), info.checks());
-        assertThrows(UnsupportedOperationException.class, () -> info.checks().put("changed", false));
-    }
+		assertEquals(Map.of("online", true), info.checks());
+		assertThrows(UnsupportedOperationException.class, () -> info.checks().put("changed", false));
+	}
 
-    @Test
-    void addonMetadataRejectsMissingIdentity() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new DragonAltarAddon("", "Example", "1.0.0", "Owner", ""));
-        assertThrows(IllegalArgumentException.class,
-                () -> new DragonAltarAddon("example", "Example", "", "Owner", ""));
-    }
+	@Test
+	void addonMetadataRejectsMissingIdentity() {
+		assertThrows(IllegalArgumentException.class, () -> new DragonAltarAddon("", "Example", "1.0.0", "Owner", ""));
+		assertThrows(IllegalArgumentException.class, () -> new DragonAltarAddon("example", "Example", "", "Owner", ""));
+	}
 
-    @Test
-    void compatibilityTransferEventCarriesTheTransferAndCanCancelIt() {
-        UUID from=UUID.randomUUID(),to=UUID.randomUUID();
-        DragonSoulTransferEvent event=new DragonSoulTransferEvent("soul-1",from,to);
-        assertEquals("soul-1",event.soulId());
-        assertEquals(from,event.from());
-        assertEquals(to,event.to());
-        assertFalse(event.isCancelled());
-        event.setCancelled(true);
-        assertTrue(event.isCancelled());
-    }
+	@Test
+	void compatibilityTransferEventCarriesTheTransferAndCanCancelIt() {
+		UUID from = UUID.randomUUID(), to = UUID.randomUUID();
+		DragonSoulTransferEvent event = new DragonSoulTransferEvent("soul-1", from, to);
+		assertEquals("soul-1", event.soulId());
+		assertEquals(from, event.from());
+		assertEquals(to, event.to());
+		assertFalse(event.isCancelled());
+		event.setCancelled(true);
+		assertTrue(event.isCancelled());
+	}
 
-    @Test
-    void addonItemApiPublishesSnapshotContextAndCancellableEvent() throws Exception {
-        assertTrue(Cancellable.class.isAssignableFrom(DragonAddonItemEquipEvent.class));
-        assertEquals(ItemStack.class, DragonAddonItem.Context.class.getMethod("item").getReturnType());
-        assertEquals(EquipmentSlot.class, DragonAddonItem.Context.class.getMethod("slot").getReturnType());
-        DragonAddonItemEquipEvent.class.getConstructor(
-                org.bukkit.entity.Player.class, String.class, String.class,
-                EquipmentSlot.class, ItemStack.class);
-        assertEquals(void.class, DragonAltarApi.class.getMethod(
-                "registerItem", org.bukkit.plugin.Plugin.class, DragonAddonItem.class).getReturnType());
-        assertEquals(void.class, DragonAltarApi.class.getMethod(
-                "tagSoulBound", ItemStack.class, String.class).getReturnType());
-    }
+	@Test
+	void addonItemApiPublishesSnapshotContextAndCancellableEvent() throws Exception {
+		assertTrue(Cancellable.class.isAssignableFrom(DragonAddonItemEquipEvent.class));
+		assertEquals(ItemStack.class, DragonAddonItem.Context.class.getMethod("item").getReturnType());
+		assertEquals(EquipmentSlot.class, DragonAddonItem.Context.class.getMethod("slot").getReturnType());
+		DragonAddonItemEquipEvent.class.getConstructor(org.bukkit.entity.Player.class, String.class, String.class,
+				EquipmentSlot.class, ItemStack.class);
+		assertEquals(void.class, DragonAltarApi.class
+				.getMethod("registerItem", org.bukkit.plugin.Plugin.class, DragonAddonItem.class).getReturnType());
+		assertEquals(void.class,
+				DragonAltarApi.class.getMethod("tagSoulBound", ItemStack.class, String.class).getReturnType());
+	}
 
-    @Test
-    void soulBoundMarkersRequireCanonicalNamespacedItemIds() {
-        assertTrue(DragonAltarApiImpl.validNamespacedId("ember-tools:frost-vestment"));
-        assertTrue(DragonAltarApiImpl.validNamespacedId("a1:item_2"));
-        assertFalse(DragonAltarApiImpl.validNamespacedId(null));
-        assertFalse(DragonAltarApiImpl.validNamespacedId("ember-tools"));
-        assertFalse(DragonAltarApiImpl.validNamespacedId("Ember:vestment"));
-        assertFalse(DragonAltarApiImpl.validNamespacedId("ember:a"));
-        assertFalse(DragonAltarApiImpl.validNamespacedId("ember:item:extra"));
-    }
+	@Test
+	void soulBoundMarkersRequireCanonicalNamespacedItemIds() {
+		assertTrue(DragonAltarApiImpl.validNamespacedId("ember-tools:frost-vestment"));
+		assertTrue(DragonAltarApiImpl.validNamespacedId("a1:item_2"));
+		assertFalse(DragonAltarApiImpl.validNamespacedId(null));
+		assertFalse(DragonAltarApiImpl.validNamespacedId("ember-tools"));
+		assertFalse(DragonAltarApiImpl.validNamespacedId("Ember:vestment"));
+		assertFalse(DragonAltarApiImpl.validNamespacedId("ember:a"));
+		assertFalse(DragonAltarApiImpl.validNamespacedId("ember:item:extra"));
+	}
 
-    @Test
-    void addonItemsDefaultToManualSoulLossHandling() {
-        DragonAddonItem item = new DragonAddonItem() {
-            @Override public String id() { return "ember-tools:vestment"; }
-            @Override public String displayName() { return "Vestment"; }
-            @Override public String soulId() { return "Akuma"; }
-        };
+	@Test
+	void addonItemsDefaultToManualSoulLossHandling() {
+		DragonAddonItem item = new DragonAddonItem() {
+			@Override
+			public String id() {
+				return "ember-tools:vestment";
+			}
+			@Override
+			public String displayName() {
+				return "Vestment";
+			}
+			@Override
+			public String soulId() {
+				return "Akuma";
+			}
+		};
 
-        assertEquals(DragonAddonItem.StripPolicy.NONE, item.onSoulLoss());
-        assertEquals(4, DragonAddonItem.StripPolicy.values().length);
-    }
+		assertEquals(DragonAddonItem.StripPolicy.NONE, item.onSoulLoss());
+		assertEquals(4, DragonAddonItem.StripPolicy.values().length);
+	}
 
-    @Test
-    void unequipStorageNeverUsesTheSelectedHotbarSlot() {
-        boolean[] empty = new boolean[36];
-        empty[2] = true;
-        empty[7] = true;
-        assertEquals(7, DragonAltarApiImpl.firstUnequipSlot(2, empty));
+	@Test
+	void unequipStorageNeverUsesTheSelectedHotbarSlot() {
+		boolean[] empty = new boolean[36];
+		empty[2] = true;
+		empty[7] = true;
+		assertEquals(7, DragonAltarApiImpl.firstUnequipSlot(2, empty));
 
-        java.util.Arrays.fill(empty, false);
-        empty[2] = true;
-        assertEquals(-1, DragonAltarApiImpl.firstUnequipSlot(2, empty));
-        assertThrows(IllegalArgumentException.class,
-                () -> DragonAltarApiImpl.firstUnequipSlot(0, new boolean[35]));
-    }
+		java.util.Arrays.fill(empty, false);
+		empty[2] = true;
+		assertEquals(-1, DragonAltarApiImpl.firstUnequipSlot(2, empty));
+		assertThrows(IllegalArgumentException.class, () -> DragonAltarApiImpl.firstUnequipSlot(0, new boolean[35]));
+	}
 
 }

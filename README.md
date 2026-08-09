@@ -118,10 +118,47 @@ complete starter add-on.
 ## Building
 
 ```text
-mvn clean package
+mvn clean verify
 ```
 
-The release JAR is written to `target/DragonAltar-1.4.21.jar`. Maven compiles with `--release 21`, runs the JUnit suite, filters only `plugin.yml`, and produces deterministic archive timestamps.
+The release JAR is written to `target/DragonAltar-1.4.21.jar`. Maven compiles
+with `--release 21`, runs the JUnit suite, enforces deterministic formatting,
+runs high-confidence SpotBugs analysis, writes JaCoCo coverage reports, filters
+only `plugin.yml`, and produces deterministic archive timestamps.
+
+Useful development commands:
+
+```text
+mvn spotless:apply                 # format Java, pom.xml, and workflow YAML
+mvn spotless:check                 # check formatting without changing files
+mvn test                           # run unit and contract tests
+mvn -DskipTests spotbugs:check     # run static analysis
+mvn clean verify                   # run the complete release gate
+```
+
+### Developer architecture
+
+- `ability` owns ability dispatch, energy, cooldowns, selection, bounded target
+  queries, presentation/accessibility, temporary state, and soul-specific
+  mechanics. Every repeating session must expose deterministic cleanup through
+  its owning service.
+- `persistence` owns immutable YAML snapshots, single-writer ordering, atomic
+  replacement, coalescing for high-frequency player/cooldown documents, flush
+  barriers, and validated backup paths. Bukkit objects must be converted to
+  plain values before asynchronous writes are queued.
+- `soul`, `ritual`, `dragonevent`, and `dragonborn` own gameplay state
+  transitions. Crash-sensitive transitions use non-coalesced ordered writes.
+- `api` contains the stable add-on surface and its guarded implementation.
+  Types under `com.dragonaltar.api` must not be moved, renamed, or changed in a
+  source- or binary-incompatible way within the current API contract.
+- `DragonAltarPlugin` constructs services in dependency order, registers the
+  Paper surface, starts runtime tasks only when needed, and shuts down tasks and
+  temporary entities before flushing persistence.
+
+The CI workflow runs `mvn clean verify`, checks required JAR resources and the
+public API class, rejects shaded dependency classes, confirms exactly one
+release JAR, and uploads only that verified JAR. Pull requests also receive a
+dependency vulnerability review.
 
 ## License and add-ons
 

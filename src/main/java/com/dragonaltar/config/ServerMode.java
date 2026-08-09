@@ -1,3 +1,5 @@
 package com.dragonaltar.config;
 
-public enum ServerMode { BETA, PRODUCTION }
+public enum ServerMode {
+	BETA, PRODUCTION
+}
