@@ -109,7 +109,12 @@ API contract `3.0`. The Maven artifact version matches the plugin release:
 
 ### How do I get the API?
 
-Declare `depend: [DragonAltar]` and load `DragonAltarApi.class` from Bukkit's `ServicesManager` during `onEnable`.
+Add the GitHub Packages repository and the provided Maven dependency
+`com.dragonaltar:dragonaltar-api:1.4.21`. Configure `~/.m2/settings.xml` with a
+classic GitHub token carrying `read:packages`, declare `depend: [DragonAltar]`,
+and load `DragonAltarApi.class` from Bukkit's `ServicesManager` during
+`onEnable`. See [Add-on Development](Add-on-Development#maven-setup) for the
+copy-paste configuration.
 
 ### Can I use `DragonAltarPlugin` or `DragonAltarApiImpl`?
 

@@ -79,11 +79,37 @@ Use Java 21 and mark the standalone API and Paper as `provided`:
 
 Do not shade DragonAltar into the add-on.
 
-GitHub's Maven registry requires authentication. In `~/.m2/settings.xml`, add a
-server with id `github`, your GitHub username, and a classic personal access
-token with `read:packages`. A private repository/package also requires the
-account to have read access. In GitHub Actions, a repository granted package
-access can use `GITHUB_TOKEN` with `packages: read`.
+GitHub's Maven registry requires authentication for public and private Maven
+packages. Create a classic personal access token with `read:packages`, then put
+the credentials in `~/.m2/settings.xml`. Never commit the token to the add-on:
+
+```xml
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR_GITHUB_USERNAME</username>
+      <password>YOUR_CLASSIC_PERSONAL_ACCESS_TOKEN</password>
+    </server>
+  </servers>
+</settings>
+```
+
+The server id must match the `github` repository id in the POM. If the package
+or repository becomes private, the GitHub account must also have read access.
+In GitHub Actions, a repository granted access to the package can use its
+built-in `GITHUB_TOKEN` with `packages: read`:
+
+```yaml
+permissions:
+  contents: read
+  packages: read
+```
+
+The Maven artifact version follows the plugin release version. API artifact
+`1.4.21` is supplied by DragonAltar plugin `1.4.21`; the independent runtime
+contract returned by `apiVersion()` is `3.0`. Compile against the oldest API
+artifact your add-on supports and use only `com.dragonaltar.api` types.
 
 ## Bukkit metadata
 

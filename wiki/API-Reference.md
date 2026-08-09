@@ -3,6 +3,26 @@
 DragonAltar 1.4.21 publishes API contract `3.0` and the Maven artifact
 `com.dragonaltar:dragonaltar-api:1.4.21`. Load the service through Bukkit:
 
+```xml
+<repositories>
+  <repository>
+    <id>github</id>
+    <url>https://maven.pkg.github.com/silverfox0338/dragonaltar</url>
+  </repository>
+</repositories>
+
+<dependency>
+  <groupId>com.dragonaltar</groupId>
+  <artifactId>dragonaltar-api</artifactId>
+  <version>1.4.21</version>
+  <scope>provided</scope>
+</dependency>
+```
+
+GitHub Packages requires Maven authentication. See
+[Add-on Development](Add-on-Development#maven-setup) for the complete Java 21
+POM, Paper dependency, `settings.xml`, and GitHub Actions setup.
+
 ```java
 DragonAltarApi api = Bukkit.getServicesManager().load(DragonAltarApi.class);
 if (api == null) {
