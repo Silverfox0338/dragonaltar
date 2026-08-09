@@ -76,4 +76,30 @@ class PublicApiModelTest {
         assertFalse(DragonAltarApiImpl.validNamespacedId("ember:item:extra"));
     }
 
+    @Test
+    void addonItemsDefaultToManualSoulLossHandling() {
+        DragonAddonItem item = new DragonAddonItem() {
+            @Override public String id() { return "ember-tools:vestment"; }
+            @Override public String displayName() { return "Vestment"; }
+            @Override public String soulId() { return "Akuma"; }
+        };
+
+        assertEquals(DragonAddonItem.StripPolicy.NONE, item.onSoulLoss());
+        assertEquals(4, DragonAddonItem.StripPolicy.values().length);
+    }
+
+    @Test
+    void unequipStorageNeverUsesTheSelectedHotbarSlot() {
+        boolean[] empty = new boolean[36];
+        empty[2] = true;
+        empty[7] = true;
+        assertEquals(7, DragonAltarApiImpl.firstUnequipSlot(2, empty));
+
+        java.util.Arrays.fill(empty, false);
+        empty[2] = true;
+        assertEquals(-1, DragonAltarApiImpl.firstUnequipSlot(2, empty));
+        assertThrows(IllegalArgumentException.class,
+                () -> DragonAltarApiImpl.firstUnequipSlot(0, new boolean[35]));
+    }
+
 }

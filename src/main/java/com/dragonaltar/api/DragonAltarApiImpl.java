@@ -9,6 +9,7 @@ import com.dragonaltar.api.addon.DragonAddonAbility;
 import com.dragonaltar.api.addon.DragonAddonItem;
 import com.dragonaltar.api.addon.DragonAltarAddon;
 import com.dragonaltar.api.event.DragonAddonItemEquipEvent;
+import com.dragonaltar.api.event.DragonbornLoseEvent;
 import com.dragonaltar.api.model.DragonAbilityInfo;
 import com.dragonaltar.api.model.DragonActionResult;
 import com.dragonaltar.api.model.DragonEligibilityInfo;
@@ -36,7 +37,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -60,7 +63,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
-    private static final String API_VERSION = "2.1";
+    private static final String API_VERSION = "2.2";
     private static final Pattern ADDON_ID = Pattern.compile("[a-z0-9][a-z0-9._-]{1,31}");
     private static final Pattern ABILITY_PART = Pattern.compile("[a-z0-9][a-z0-9._-]{1,47}");
     private static final Pattern ITEM_PART = Pattern.compile("[a-z0-9][a-z0-9._-]{1,47}");
@@ -69,6 +72,7 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
     private final DragonAltarPlugin plugin;
     private final Map<Plugin, Registration> registrations = new IdentityHashMap<>();
     private final Map<String, RegisteredItem> items = new java.util.LinkedHashMap<>();
+    private final Map<UUID, String> soulLossDeaths = new java.util.HashMap<>();
     private final NamespacedKey soulBoundItemKey;
 
     public DragonAltarApiImpl(DragonAltarPlugin plugin) {
@@ -205,9 +209,12 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
         String id = validateItem(registration.addon, item);
         if (items.containsKey(id)) throw new IllegalStateException("Item id is already registered: " + id);
         SoulIdentity soul = identity(item.soulId());
-        RegisteredItem registered = new RegisteredItem(id, item.displayName().trim(), soul, item);
+        DragonAddonItem.StripPolicy policy = Objects.requireNonNull(item.onSoulLoss(), "item soul-loss policy");
+        RegisteredItem registered = new RegisteredItem(id, item.displayName().trim(), soul, policy, item);
         items.put(id, registered);
         registration.itemIds.add(id);
+        Bukkit.getScheduler().runTask(plugin, () -> Bukkit.getOnlinePlayers()
+                .forEach(player -> reconcile(player, registered)));
     }
 
     @Override
@@ -260,6 +267,46 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
     @EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
         unregisterAddon(event.getPlugin());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onDragonbornLose(DragonbornLoseEvent event) {
+        Player player = Bukkit.getPlayer(event.player());
+        if (player != null && !player.isDead()) applySoulLoss(player, event.soulId());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void beforePlayerDeath(PlayerDeathEvent event) {
+        plugin.souls().byHolder(event.getPlayer().getUniqueId()).ifPresent(soul ->
+                soulLossDeaths.put(event.getPlayer().getUniqueId(), soul.id()));
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerDeath(PlayerDeathEvent event) {
+        Player player = event.getPlayer();
+        String lostSoulId = soulLossDeaths.remove(player.getUniqueId());
+        if (lostSoulId == null) return;
+        if (plugin.souls().byHolder(player.getUniqueId()).isPresent()) return;
+        if (event.getKeepInventory()) {
+            applySoulLoss(player, lostSoulId);
+            return;
+        }
+        for (EquipmentSlot slot : EQUIPMENT_SLOTS) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            RegisteredItem registered = registeredItem(stack);
+            if (registered == null || !registered.soul().id().equalsIgnoreCase(lostSoulId)
+                    || registered.policy() != DragonAddonItem.StripPolicy.DESTROY)
+                continue;
+            removeOneDrop(event.getDrops(), stack, registered.id());
+            player.getInventory().setItem(slot, null);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (event.getPlayer().isOnline()) reconcile(event.getPlayer());
+        });
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -557,6 +604,85 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
                 "soul", denial.item().soul().displayName());
     }
 
+    private void applySoulLoss(Player player, String soulId) {
+        for (EquipmentSlot slot : EQUIPMENT_SLOTS) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            RegisteredItem registered = registeredItem(stack);
+            if (registered != null && registered.soul().id().equalsIgnoreCase(soulId))
+                applyPolicy(player, slot, stack, registered.policy());
+        }
+    }
+
+    private void reconcile(Player player) {
+        for (EquipmentSlot slot : EQUIPMENT_SLOTS) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            RegisteredItem registered = registeredItem(stack);
+            if (registered != null) reconcile(player, slot, stack, registered);
+        }
+    }
+
+    private void reconcile(Player player, RegisteredItem target) {
+        for (EquipmentSlot slot : EQUIPMENT_SLOTS) {
+            ItemStack stack = player.getInventory().getItem(slot);
+            RegisteredItem registered = registeredItem(stack);
+            if (registered != null && registered.id().equals(target.id()))
+                reconcile(player, slot, stack, registered);
+        }
+    }
+
+    private void reconcile(Player player, EquipmentSlot slot, ItemStack stack, RegisteredItem registered) {
+        boolean holdsSoul = soulInfoOf(player.getUniqueId())
+                .map(soul -> soul.id().equals(registered.soul().id()))
+                .orElse(false);
+        if (!holdsSoul) applyPolicy(player, slot, stack, registered.policy());
+    }
+
+    private RegisteredItem registeredItem(ItemStack stack) {
+        return soulBoundItemId(stack).map(items::get).orElse(null);
+    }
+
+    private void applyPolicy(Player player, EquipmentSlot slot, ItemStack stack,
+                             DragonAddonItem.StripPolicy policy) {
+        if (policy == DragonAddonItem.StripPolicy.NONE || isEmpty(stack)) return;
+        ItemStack removed = stack.clone();
+        int destination = policy == DragonAddonItem.StripPolicy.UNEQUIP
+                ? firstUnequipSlot(player.getInventory()) : -1;
+        player.getInventory().setItem(slot, null);
+        if (policy == DragonAddonItem.StripPolicy.UNEQUIP && destination >= 0) {
+            player.getInventory().setItem(destination, removed);
+        } else if (policy == DragonAddonItem.StripPolicy.UNEQUIP
+                || policy == DragonAddonItem.StripPolicy.DROP) {
+            player.getWorld().dropItemNaturally(player.getLocation(), removed);
+        }
+    }
+
+    private void removeOneDrop(List<ItemStack> drops, ItemStack equipped, String itemId) {
+        if (isEmpty(equipped)) return;
+        var iterator = drops.iterator();
+        while (iterator.hasNext()) {
+            ItemStack drop = iterator.next();
+            if (drop.getAmount() == equipped.getAmount() && drop.isSimilar(equipped)
+                    && soulBoundItemId(drop).filter(itemId::equals).isPresent()) {
+                iterator.remove();
+                return;
+            }
+        }
+    }
+
+    private static int firstUnequipSlot(org.bukkit.inventory.PlayerInventory inventory) {
+        boolean[] empty = new boolean[36];
+        for (int slot = 0; slot < empty.length; slot++) empty[slot] = isEmpty(inventory.getItem(slot));
+        return firstUnequipSlot(inventory.getHeldItemSlot(), empty);
+    }
+
+    static int firstUnequipSlot(int heldSlot, boolean[] emptySlots) {
+        if (emptySlots == null || emptySlots.length < 36)
+            throw new IllegalArgumentException("Expected all 36 player storage slots");
+        for (int slot = 0; slot < 36; slot++)
+            if (slot != heldSlot && emptySlots[slot]) return slot;
+        return -1;
+    }
+
     private List<EquipCandidate> clickCandidates(InventoryClickEvent event, Player player) {
         List<EquipCandidate> candidates = new ArrayList<>();
         Inventory clicked = event.getClickedInventory();
@@ -691,7 +817,12 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
         }
     }
 
-    private record RegisteredItem(String id, String displayName, SoulIdentity soul, DragonAddonItem item) {}
+    private static final List<EquipmentSlot> EQUIPMENT_SLOTS = List.of(
+            EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS,
+            EquipmentSlot.FEET, EquipmentSlot.OFF_HAND, EquipmentSlot.HAND);
+
+    private record RegisteredItem(String id, String displayName, SoulIdentity soul,
+                                  DragonAddonItem.StripPolicy policy, DragonAddonItem item) {}
     private record EquipCandidate(EquipmentSlot slot, ItemStack item) {}
     private record Denial(RegisteredItem item, String message) {}
 }

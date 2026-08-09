@@ -1,6 +1,6 @@
 # Public API
 
-DragonAltar publishes API version `2.1` through Bukkit's `ServicesManager`. Add-ons
+DragonAltar publishes API version `2.2` through Bukkit's `ServicesManager`. Add-ons
 should depend on the service interface and the `com.dragonaltar.api` packages,
 not the main plugin class or its data files.
 
@@ -112,6 +112,7 @@ DragonAddonItem vestment = new DragonAddonItem() {
     public String id() { return "ember-tools:frost-vestment"; }
     public String displayName() { return "Frost Vestment"; }
     public String soulId() { return "Akuma"; }
+    public StripPolicy onSoulLoss() { return StripPolicy.UNEQUIP; }
 
     public DragonActionResult canEquip(Context context) {
         return context.player().getWorld().getEnvironment() == World.Environment.NORMAL
@@ -135,8 +136,16 @@ the registered soul, `canEquip` must succeed, and listeners must not cancel
 The item and event contexts expose cloned stacks. Expected denials should return
 a failed `DragonActionResult`; callback exceptions are logged and denied. Tags
 survive an add-on being disabled, but enforcement is inactive until the item id
-is registered again. DragonAltar does not automatically unequip existing items
-when a soul moves or is lost.
+is registered again.
+
+`onSoulLoss()` controls common lifecycle behavior. `NONE` is the default and
+leaves handling to the add-on. `UNEQUIP` moves the stack to a non-equipped
+inventory slot, `DROP` drops it at the player's location, and `DESTROY` removes
+it permanently. UNEQUIP safely falls back to DROP when inventory is full and
+never places an item back into the selected main-hand slot. DragonAltar applies
+the policy on `DragonbornLoseEvent`, reconciles offline losses when the player
+joins, and reconciles live players when an item definition is registered again.
+Death and keep-inventory paths are handled without duplicating vanilla drops.
 
 ## Bukkit events
 
@@ -160,8 +169,9 @@ log for players, or otherwise reveal administrative participants or private
 custody. Use the snapshot API for anything players can see.
 
 `DragonSoulTransferEvent` and `DragonbornLoseEvent` both expose `soulId()`, so
-equipment add-ons can react to transfer, Limbo, fracture, or other loss paths
-without inferring the soul from player context.
+items using `NONE` can implement particle effects, lore changes, or other custom
+transfer, Limbo, fracture, and loss behavior without inferring the soul from
+player context.
 
 ## Compatibility
 

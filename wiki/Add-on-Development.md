@@ -1,6 +1,6 @@
 # Building a DragonAltar Add-on
 
-DragonAltar 1.4.20 publishes API contract `2.1` through Bukkit's `ServicesManager`. Build against the service interface and `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to its implementation, or import gameplay implementation packages.
+DragonAltar 1.4.21 publishes API contract `2.2` through Bukkit's `ServicesManager`. Build against the service interface and `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to its implementation, or import gameplay implementation packages.
 
 ## License rules
 
@@ -63,7 +63,7 @@ Use Java 21 and mark DragonAltar and Paper as `provided`:
     <dependency>
       <groupId>com.dragonaltar</groupId>
       <artifactId>dragonaltar</artifactId>
-      <version>1.4.20</version>
+      <version>1.4.21</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -217,6 +217,7 @@ dragonAltar.registerItem(this, new DragonAddonItem() {
     public String id() { return "ember-tools:frost-vestment"; }
     public String displayName() { return "Frost Vestment"; }
     public String soulId() { return "Akuma"; }
+    public StripPolicy onSoulLoss() { return StripPolicy.UNEQUIP; }
 });
 
 ItemStack vestment = new ItemStack(Material.DIAMOND_CHESTPLATE);
@@ -229,9 +230,11 @@ checks soul ownership for helmet, chest, legs, feet, main hand, and off hand.
 Tags remain recognizable while the add-on is disabled, but enforcement resumes
 only after its item id is registered again.
 
-DragonAltar does not strip already-equipped items when a soul leaves. Use the
-`soulId()` carried by `DragonSoulTransferEvent` and `DragonbornLoseEvent` when
-the add-on needs that behavior.
+`onSoulLoss()` may return `NONE`, `UNEQUIP`, `DROP`, or `DESTROY`. NONE preserves
+manual handling. UNEQUIP uses a non-equipped inventory slot and falls back to a
+drop if inventory is full. Policies also reconcile offline loss at login and
+add-on re-registration. Use the `soulId()` carried by
+`DragonSoulTransferEvent` and `DragonbornLoseEvent` for custom NONE behavior.
 
 ## Cast lifecycle
 

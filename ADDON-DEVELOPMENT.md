@@ -30,7 +30,7 @@ Then add DragonAltar as a provided dependency in the add-on's `pom.xml`:
   <dependency>
     <groupId>com.dragonaltar</groupId>
     <artifactId>dragonaltar</artifactId>
-    <version>1.4.20</version>
+    <version>1.4.21</version>
     <scope>provided</scope>
   </dependency>
   <dependency>
@@ -128,6 +128,7 @@ public final class EmberToolsPlugin extends JavaPlugin {
         @Override public String id() { return "ember-tools:frost-vestment"; }
         @Override public String displayName() { return "Frost Vestment"; }
         @Override public String soulId() { return "Akuma"; }
+        @Override public StripPolicy onSoulLoss() { return StripPolicy.UNEQUIP; }
 
         @Override
         public DragonActionResult canEquip(Context context) {
@@ -165,8 +166,11 @@ free. Review [LICENSE.md](LICENSE.md) before distribution.
   gameplay denial.
 - Register item definitions before calling `tagSoulBound`. Tags remain on stacks
   across restarts; enforcement resumes when the owning add-on registers the id.
-- Listen to `DragonAddonItemEquipEvent` for additional equip vetoes and to
-  `DragonSoulTransferEvent` or `DragonbornLoseEvent` when equipped items should
-  react to their soul moving. DragonAltar does not automatically unequip them.
+- Choose `NONE`, `UNEQUIP`, `DROP`, or `DESTROY` from `onSoulLoss`. `NONE` keeps
+  manual handling; UNEQUIP falls back to dropping when no safe inventory slot
+  exists.
+- Listen to `DragonAddonItemEquipEvent` for additional equip vetoes. Items using
+  `NONE` can use `DragonSoulTransferEvent` or `DragonbornLoseEvent` for custom
+  effects when their soul moves.
 - Avoid blocking work in ability callbacks; schedule slow work asynchronously
   and return to the server thread before using Bukkit world APIs.

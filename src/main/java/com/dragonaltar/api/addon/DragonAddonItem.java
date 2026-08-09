@@ -20,8 +20,24 @@ public interface DragonAddonItem {
     String displayName();
     String soulId();
 
+    /** Common action DragonAltar should take when this item's wearer loses its soul. */
+    default StripPolicy onSoulLoss() {
+        return StripPolicy.NONE;
+    }
+
     default DragonActionResult canEquip(Context context) {
         return DragonActionResult.ok();
+    }
+
+    enum StripPolicy {
+        /** Leave the item equipped so the add-on can handle the loss itself. */
+        NONE,
+        /** Move the item to ordinary inventory space, dropping it if no safe slot exists. */
+        UNEQUIP,
+        /** Remove the item from its slot and drop it at the player's location. */
+        DROP,
+        /** Permanently remove the equipped item. */
+        DESTROY
     }
 
     record Context(Player player, EquipmentSlot slot, ItemStack item, DragonAltarApi api) {

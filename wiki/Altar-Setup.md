@@ -156,7 +156,7 @@ The optional cuboid protection blocks breaking, placing, fluids, fire spread, pi
 
 Set the corners with the guided setup `pos1` and `pos2` commands, or with the protection commands after setup.
 
-The active 1.4.20 switch is:
+The active 1.4.21 switch is:
 
 ```yaml
 internal-protection:

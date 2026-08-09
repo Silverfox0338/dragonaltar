@@ -102,9 +102,9 @@ DragonAltar is owned by Silverfox0338.
 
 ## Add-on developer questions
 
-### What API version ships with DragonAltar 1.4.20?
+### What API version ships with DragonAltar 1.4.21?
 
-API contract `2.1`.
+API contract `2.2`.
 
 ### How do I get the API?
 

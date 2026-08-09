@@ -1,14 +1,14 @@
 # Installing DragonAltar
 
-DragonAltar 1.4.20 requires Paper 1.21.4 and Java 21. Paper and optional plugin APIs are not bundled in the DragonAltar JAR.
+DragonAltar 1.4.21 requires Paper 1.21.4 and Java 21. Paper and optional plugin APIs are not bundled in the DragonAltar JAR.
 
 ## Fresh installation
 
 1. Stop the Paper server.
 2. Confirm that the server actually starts with Java 21.
-3. Put `DragonAltar-1.4.20.jar` in the server's `plugins` directory.
+3. Put `DragonAltar-1.4.21.jar` in the server's `plugins` directory.
 4. Start the server once.
-5. Confirm that the console reports DragonAltar 1.4.20 and does not report a configuration validation failure.
+5. Confirm that the console reports DragonAltar 1.4.21 and does not report a configuration validation failure.
 6. Stop the server and review the six generated configuration files under `plugins/DragonAltar`.
 7. Start the server and complete [Altar Setup](Altar-Setup).
 8. Run `/dragon system validate`, `/dragon setup validate`, and `/dragon system health`.
@@ -19,7 +19,7 @@ The generated directories include `data`, `backups`, and `logs`.
 
 ## Required and optional plugins
 
-| Component | Required | What 1.4.20 does |
+| Component | Required | What 1.4.21 does |
 |---|---:|---|
 | Paper 1.21.4 | Yes | Provides the server API and vanilla Ender Dragon respawn controls |
 | PlaceholderAPI | No | Registers the `%dragonaltar_...%` placeholders |
@@ -42,7 +42,7 @@ It merges missing defaults and runs strict validation. If validation fails durin
 
 The initial altar locations are blank. This is expected. Use `/dragon setup begin` rather than typing serialized locations by hand.
 
-## Upgrading to 1.4.20
+## Upgrading to 1.4.21
 
 > Stop the server before copying or restoring DragonAltar data. Do not replace installed YAML files with fresh bundled copies.
 
@@ -51,7 +51,7 @@ The initial altar locations are blank. This is expected. Use `/dragon setup begi
 3. Keep the previous DragonAltar JAR with that backup.
 4. Replace only the plugin JAR.
 5. Start Paper and read the DragonAltar startup messages.
-6. Run `/dragon system version` and confirm `1.4.20`.
+6. Run `/dragon system version` and confirm `1.4.21`.
 7. Run `/dragon system validate`.
 8. Run `/dragon altar validate`.
 9. Run `/dragon system health`.
@@ -87,7 +87,7 @@ mvn clean package
 The verified JAR is written to:
 
 ```text
-target/DragonAltar-1.4.20.jar
+target/DragonAltar-1.4.21.jar
 ```
 
 Maven compiles with Java release 21 and runs the JUnit suite.

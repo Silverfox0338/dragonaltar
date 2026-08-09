@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.21 - 2026-08-08
+
+- Added API 2.2 per-item soul-loss policies for leaving, unequipping, dropping,
+  or destroying registered soul-bound equipment.
+- Reconciled offline losses on join and add-on re-registration, including safe
+  full-inventory and death/keep-inventory behavior without item duplication.
+
 ## 1.4.20 - 2026-08-08
 
 - Added API 2.1 registration and canonical PDC tagging for soul-bound add-on items.

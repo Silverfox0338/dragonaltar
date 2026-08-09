@@ -1,6 +1,6 @@
 # API Reference
 
-DragonAltar 1.4.20 publishes API contract `2.1`. Load it through Bukkit:
+DragonAltar 1.4.21 publishes API contract `2.2`. Load it through Bukkit:
 
 ```java
 DragonAltarApi api = Bukkit.getServicesManager().load(DragonAltarApi.class);
@@ -19,7 +19,7 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 
 | Method | Parameters | Return | Notes |
 |---|---|---|---|
-| `String apiVersion()` | None | `2.1` | API contract version, independent of plugin release |
+| `String apiVersion()` | None | `2.2` | API contract version, independent of plugin release |
 | `DragonEventInfo event()` | None | Immutable event snapshot | State, altar state, optional session UUID, optional canonical dragon UUID |
 | `Optional<DragonRitualInfo> activeRitual()` | None | Active initial ritual | Empty when inactive; consumed item data is never included |
 | `Collection<DragonSoulInfo> souls()` | None | Immutable list of all public soul snapshots | Exactly the currently created canonical souls |
@@ -39,7 +39,7 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 | `Collection<String> abilityIds()` | None | Every registered ability id | Includes built-ins, resonances, and live add-on abilities |
 | `Optional<DragonAbilityInfo> ability(String id)` | Ability id, case-insensitive | Public metadata | Empty when unknown; null also returns empty |
 | `int energy(Player player)` | Player | Current energy | Returns 0 when no public Dragonborn state |
-| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.20 configuration |
+| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.21 configuration |
 | `boolean selectAbility(Player player, String abilityId)` | Player, id | Whether final selection matches | Main thread; needs base permission, holder state, registered and available id; selection event may cancel |
 
 `cast` returns the internal localization key for some built-in failures and a plain message for add-on failures. Treat the string as diagnostic unless your add-on owns the returned message.
@@ -138,7 +138,14 @@ The record has its generated constructor `Context(Player, DragonAltarApi)`, acce
 
 Required methods are `id()`, `displayName()`, and `soulId()`. The id must use the
 registered add-on namespace and the soul may be a canonical id or public name.
-`canEquip(Context)` defaults to `DragonActionResult.ok()`.
+`canEquip(Context)` defaults to `DragonActionResult.ok()` and `onSoulLoss()`
+defaults to `StripPolicy.NONE`.
+
+`StripPolicy` values are `NONE`, `UNEQUIP`, `DROP`, and `DESTROY`. UNEQUIP moves
+the whole stack to a non-equipped storage slot and falls back to DROP if none is
+available. Policies run for online loss, on the next join after offline loss,
+and when an item definition returns after an add-on reload. Death drops and
+keep-inventory behavior are reconciled without duplicating stacks.
 
 The context contains `Player player`, `EquipmentSlot slot`, cloned `ItemStack
 item`, and `DragonAltarApi api`. Its `item()` accessor returns another clone.
@@ -297,10 +304,10 @@ Every concrete event implements `getHandlers()` and a static `getHandlerList()` 
 
 `DragonSoulTransferStartEvent` is dispatched first. If it is not cancelled, the compatibility `DragonSoulTransferEvent` is dispatched before the durable assignment. Cancelling either event prevents the transfer. `DragonSoulTransferCompleteEvent` is dispatched after a successful assignment.
 
-`DragonSoulTransferEvent` and `DragonbornLoseEvent` expose `soulId()` for item
-lifecycle reactions. DragonAltar does not automatically unequip registered gear
-when a soul is lost. Equip enforcement covers head, chest, legs, feet, main hand,
-and off hand for cancellable player actions and dispenser armor placement.
+`DragonSoulTransferEvent` and `DragonbornLoseEvent` expose `soulId()` for custom
+item lifecycle reactions when `StripPolicy.NONE` is used. Equip enforcement
+covers head, chest, legs, feet, main hand, and off hand for cancellable player
+actions and dispenser armor placement.
 
 Do not construct and call DragonAltar events to force gameplay. They are notifications and cancellation points around DragonAltar-owned state changes.
 
