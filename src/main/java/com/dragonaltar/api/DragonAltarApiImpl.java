@@ -6,7 +6,9 @@ import com.dragonaltar.ability.AbilityContext;
 import com.dragonaltar.ability.AbilityResult;
 import com.dragonaltar.ability.DragonAbility;
 import com.dragonaltar.api.addon.DragonAddonAbility;
+import com.dragonaltar.api.addon.DragonAddonItem;
 import com.dragonaltar.api.addon.DragonAltarAddon;
+import com.dragonaltar.api.event.DragonAddonItemEquipEvent;
 import com.dragonaltar.api.model.DragonAbilityInfo;
 import com.dragonaltar.api.model.DragonActionResult;
 import com.dragonaltar.api.model.DragonEligibilityInfo;
@@ -22,9 +24,24 @@ import com.dragonaltar.soul.SoulIdentity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockDispenseArmorEvent;
+import org.bukkit.event.inventory.InventoryAction;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.plugin.Plugin;
 
@@ -43,16 +60,20 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
-    private static final String API_VERSION = "2.0";
+    private static final String API_VERSION = "2.1";
     private static final Pattern ADDON_ID = Pattern.compile("[a-z0-9][a-z0-9._-]{1,31}");
     private static final Pattern ABILITY_PART = Pattern.compile("[a-z0-9][a-z0-9._-]{1,47}");
+    private static final Pattern ITEM_PART = Pattern.compile("[a-z0-9][a-z0-9._-]{1,47}");
     private static final long MAX_COOLDOWN = Duration.ofHours(24).toMillis();
 
     private final DragonAltarPlugin plugin;
     private final Map<Plugin, Registration> registrations = new IdentityHashMap<>();
+    private final Map<String, RegisteredItem> items = new java.util.LinkedHashMap<>();
+    private final NamespacedKey soulBoundItemKey;
 
     public DragonAltarApiImpl(DragonAltarPlugin plugin) {
         this.plugin = plugin;
+        this.soulBoundItemKey = new NamespacedKey(plugin, "soul_bound_item");
     }
 
     @Override
@@ -174,12 +195,60 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
     }
 
     @Override
+    public void registerItem(Plugin owner, DragonAddonItem item) {
+        requireMainThread();
+        requireLivePlugin(owner);
+        Objects.requireNonNull(item, "item");
+        Registration registration = registrations.get(owner);
+        if (registration == null)
+            throw new IllegalStateException("Register the add-on before registering items");
+        String id = validateItem(registration.addon, item);
+        if (items.containsKey(id)) throw new IllegalStateException("Item id is already registered: " + id);
+        SoulIdentity soul = identity(item.soulId());
+        RegisteredItem registered = new RegisteredItem(id, item.displayName().trim(), soul, item);
+        items.put(id, registered);
+        registration.itemIds.add(id);
+    }
+
+    @Override
+    public void tagSoulBound(ItemStack item, String itemId) {
+        requireMainThread();
+        Objects.requireNonNull(item, "item");
+        if (item.getType().isAir()) throw new IllegalArgumentException("Cannot tag an empty item stack");
+        String id = Objects.requireNonNull(itemId, "itemId");
+        if (!items.containsKey(id)) throw new IllegalArgumentException("Unknown registered item: " + id);
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) throw new IllegalArgumentException("Item stack does not support metadata");
+        meta.getPersistentDataContainer().set(soulBoundItemKey, PersistentDataType.STRING, id);
+        item.setItemMeta(meta);
+    }
+
+    @Override
+    public boolean isSoulBound(ItemStack item) {
+        return soulBoundItemId(item).isPresent();
+    }
+
+    @Override
+    public Optional<String> soulBoundItemId(ItemStack item) {
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) return Optional.empty();
+        String id = item.getItemMeta().getPersistentDataContainer()
+                .get(soulBoundItemKey, PersistentDataType.STRING);
+        return validNamespacedId(id) ? Optional.of(id) : Optional.empty();
+    }
+
+    @Override
+    public Collection<String> itemIds() {
+        return List.copyOf(items.keySet());
+    }
+
+    @Override
     public boolean unregisterAddon(Plugin owner) {
         requireMainThread();
         if (owner == null) return false;
         Registration removed = registrations.remove(owner);
         if (removed == null) return false;
         plugin.abilities().unregisterExternal(removed.abilityIds);
+        removed.itemIds.forEach(items::remove);
         return true;
     }
 
@@ -191,6 +260,84 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
     @EventHandler
     public void onPluginDisable(PluginDisableEvent event) {
         unregisterAddon(event.getPlugin());
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onHeldItem(PlayerItemHeldEvent event) {
+        Player player = event.getPlayer();
+        Denial denial = preflight(player, EquipmentSlot.HAND,
+                player.getInventory().getItem(event.getNewSlot()));
+        if (denial != null) {
+            event.setCancelled(true);
+            deny(player, denial);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onSwapHands(PlayerSwapHandItemsEvent event) {
+        Denial denial = preflight(event.getPlayer(), EquipmentSlot.HAND, event.getMainHandItem());
+        if (denial == null)
+            denial = preflight(event.getPlayer(), EquipmentSlot.OFF_HAND, event.getOffHandItem());
+        if (denial != null) {
+            event.setCancelled(true);
+            deny(event.getPlayer(), denial);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        List<EquipCandidate> candidates = clickCandidates(event, player);
+        for (EquipCandidate candidate : candidates) {
+            Denial denial = preflight(player, candidate.slot(), candidate.item());
+            if (denial == null) continue;
+            event.setCancelled(true);
+            deny(player, denial);
+            return;
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+        for (Map.Entry<Integer, ItemStack> entry : event.getNewItems().entrySet()) {
+            Inventory inventory = event.getView().getInventory(entry.getKey());
+            if (inventory != player.getInventory()) continue;
+            EquipmentSlot slot = equipmentSlot(player, event.getView().convertSlot(entry.getKey()));
+            if (slot == null) continue;
+            Denial denial = preflight(player, slot, entry.getValue());
+            if (denial == null) continue;
+            event.setCancelled(true);
+            deny(player, denial);
+            return;
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInteract(PlayerInteractEvent event) {
+        if (event.getItem() == null || event.getHand() == null || !event.getAction().isRightClick()) return;
+        EquipmentSlot slot = wearableSlot(event.getItem());
+        if (slot == null || !slot.isArmor()) return;
+        if (event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK
+                && event.getClickedBlock() != null && event.getClickedBlock().getType().isInteractable()
+                && !event.getPlayer().isSneaking()) return;
+        Denial denial = preflight(event.getPlayer(), slot, event.getItem());
+        if (denial != null) {
+            event.setCancelled(true);
+            deny(event.getPlayer(), denial);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onDispenseArmor(BlockDispenseArmorEvent event) {
+        if (!(event.getTargetEntity() instanceof Player player)) return;
+        EquipmentSlot slot = wearableSlot(event.getItem());
+        if (slot == null || !slot.isArmor()) return;
+        Denial denial = preflight(player, slot, event.getItem());
+        if (denial != null) {
+            event.setCancelled(true);
+            deny(player, denial);
+        }
     }
 
     @Override
@@ -358,6 +505,127 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
         supported.forEach(this::identity);
     }
 
+    private String validateItem(DragonAltarAddon addon, DragonAddonItem item) {
+        String id = item.id();
+        if (id == null || !id.startsWith(addon.id() + ":"))
+            throw new IllegalArgumentException("Item id must use the " + addon.id() + ": namespace");
+        String localId = id.substring(addon.id().length() + 1);
+        if (!ITEM_PART.matcher(localId).matches())
+            throw new IllegalArgumentException("Item name must be 2-48 lowercase letters, numbers, dots, dashes, or underscores");
+        if (item.displayName() == null || item.displayName().isBlank())
+            throw new IllegalArgumentException("Item display name cannot be blank");
+        identity(item.soulId());
+        return id;
+    }
+
+    private Denial preflight(Player player, EquipmentSlot slot, ItemStack stack) {
+        Optional<String> taggedId = soulBoundItemId(stack);
+        if (taggedId.isEmpty()) return null;
+        RegisteredItem registered = items.get(taggedId.get());
+        if (registered == null) return null;
+        boolean holdsSoul = soulInfoOf(player.getUniqueId())
+                .map(soul -> soul.id().equals(registered.soul().id()))
+                .orElse(false);
+        if (!holdsSoul) return new Denial(registered, "");
+        DragonActionResult result;
+        try {
+            result = registered.item().canEquip(
+                    new DragonAddonItem.Context(player, slot, stack, this));
+        } catch (RuntimeException exception) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE,
+                    "Add-on item " + registered.id() + " equip check failed", exception);
+            return new Denial(registered, "");
+        }
+        if (result == null) {
+            plugin.getLogger().warning("Add-on item " + registered.id() + " returned no equip result");
+            return new Denial(registered, "");
+        }
+        if (!result.success()) return new Denial(registered, result.message());
+        DragonAddonItemEquipEvent event = new DragonAddonItemEquipEvent(
+                player, registered.id(), registered.soul().id(), slot, stack);
+        Bukkit.getPluginManager().callEvent(event);
+        return event.isCancelled() ? new Denial(registered, "") : null;
+    }
+
+    private void deny(Player player, Denial denial) {
+        if (!denial.message().isBlank()) {
+            player.sendMessage(denial.message());
+            return;
+        }
+        plugin.messages().send(player, "soul-bound-equip-denied",
+                "item", denial.item().displayName(),
+                "soul", denial.item().soul().displayName());
+    }
+
+    private List<EquipCandidate> clickCandidates(InventoryClickEvent event, Player player) {
+        List<EquipCandidate> candidates = new ArrayList<>();
+        Inventory clicked = event.getClickedInventory();
+        EquipmentSlot destination = clicked == player.getInventory()
+                ? equipmentSlot(player, event.getSlot()) : null;
+        ItemStack incoming = switch (event.getAction()) {
+            case PLACE_ALL, PLACE_SOME, PLACE_ONE, SWAP_WITH_CURSOR -> event.getCursor();
+            case HOTBAR_SWAP, HOTBAR_MOVE_AND_READD -> hotbarSource(event, player);
+            default -> null;
+        };
+        if (destination != null && incoming != null) candidates.add(new EquipCandidate(destination, incoming));
+
+        if ((event.getAction() == InventoryAction.HOTBAR_SWAP
+                || event.getAction() == InventoryAction.HOTBAR_MOVE_AND_READD)) {
+            if (event.getClick() == ClickType.SWAP_OFFHAND) {
+                candidates.add(new EquipCandidate(EquipmentSlot.OFF_HAND, event.getCurrentItem()));
+            } else if (event.getHotbarButton() == player.getInventory().getHeldItemSlot()) {
+                candidates.add(new EquipCandidate(EquipmentSlot.HAND, event.getCurrentItem()));
+            }
+        }
+
+        if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY
+                && event.getCurrentItem() != null
+                && clicked != null && destination == null) {
+            EquipmentSlot automatic = wearableSlot(event.getCurrentItem());
+            if (automatic != null && automatic.isArmor()
+                    && isEmpty(player.getInventory().getItem(automatic)))
+                candidates.add(new EquipCandidate(automatic, event.getCurrentItem()));
+        }
+        return candidates;
+    }
+
+    private static ItemStack hotbarSource(InventoryClickEvent event, Player player) {
+        if (event.getClick() == ClickType.SWAP_OFFHAND) return player.getInventory().getItemInOffHand();
+        int button = event.getHotbarButton();
+        return button >= 0 && button <= 8 ? player.getInventory().getItem(button) : null;
+    }
+
+    private static EquipmentSlot equipmentSlot(Player player, int inventorySlot) {
+        if (inventorySlot == player.getInventory().getHeldItemSlot()) return EquipmentSlot.HAND;
+        return switch (inventorySlot) {
+            case 36 -> EquipmentSlot.FEET;
+            case 37 -> EquipmentSlot.LEGS;
+            case 38 -> EquipmentSlot.CHEST;
+            case 39 -> EquipmentSlot.HEAD;
+            case 40 -> EquipmentSlot.OFF_HAND;
+            default -> null;
+        };
+    }
+
+    private static EquipmentSlot wearableSlot(ItemStack item) {
+        if (isEmpty(item)) return null;
+        EquipmentSlot slot = item.getType().getEquipmentSlot();
+        return slot == EquipmentSlot.HEAD || slot == EquipmentSlot.CHEST
+                || slot == EquipmentSlot.LEGS || slot == EquipmentSlot.FEET ? slot : null;
+    }
+
+    private static boolean isEmpty(ItemStack item) {
+        return item == null || item.getType().isAir();
+    }
+
+    static boolean validNamespacedId(String id) {
+        if (id == null) return false;
+        int colon = id.indexOf(':');
+        return colon > 0 && colon == id.lastIndexOf(':')
+                && ADDON_ID.matcher(id.substring(0, colon)).matches()
+                && ITEM_PART.matcher(id.substring(colon + 1)).matches();
+    }
+
     private DragonAbility bridge(DragonAddonAbility addonAbility) {
         Set<SoulIdentity> souls = addonAbility.supportedSouls().stream()
                 .map(this::identity)
@@ -416,9 +684,14 @@ public final class DragonAltarApiImpl implements DragonAltarApi, Listener {
     private static final class Registration {
         private final DragonAltarAddon addon;
         private final Set<String> abilityIds = new LinkedHashSet<>();
+        private final Set<String> itemIds = new LinkedHashSet<>();
 
         private Registration(DragonAltarAddon addon) {
             this.addon = addon;
         }
     }
+
+    private record RegisteredItem(String id, String displayName, SoulIdentity soul, DragonAddonItem item) {}
+    private record EquipCandidate(EquipmentSlot slot, ItemStack item) {}
+    private record Denial(RegisteredItem item, String message) {}
 }

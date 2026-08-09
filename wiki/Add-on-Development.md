@@ -1,6 +1,6 @@
 # Building a DragonAltar Add-on
 
-DragonAltar 1.4.19 publishes API contract `2.0` through Bukkit's `ServicesManager`. Build against the service interface and `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to its implementation, or import gameplay implementation packages.
+DragonAltar 1.4.20 publishes API contract `2.1` through Bukkit's `ServicesManager`. Build against the service interface and `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to its implementation, or import gameplay implementation packages.
 
 ## License rules
 
@@ -63,7 +63,7 @@ Use Java 21 and mark DragonAltar and Paper as `provided`:
     <dependency>
       <groupId>com.dragonaltar</groupId>
       <artifactId>dragonaltar</artifactId>
-      <version>1.4.19</version>
+      <version>1.4.20</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -184,7 +184,7 @@ public final class EmberToolsPlugin extends JavaPlugin {
 }
 ```
 
-DragonAltar automatically removes the registration and its abilities when Bukkit disables the owner plugin. Call `unregisterAddon(this)` manually only when features are being disabled while the Bukkit plugin remains enabled.
+DragonAltar automatically removes the registration, abilities, and item definitions when Bukkit disables the owner plugin. Call `unregisterAddon(this)` manually only when features are being disabled while the Bukkit plugin remains enabled.
 
 ## Registration validation
 
@@ -206,6 +206,32 @@ Custom ability ids use `<addon-id>:<local-id>`. The local part:
 - Must be unique in the whole live ability registry
 
 The display name must not be blank. Category must not be null. Energy cost is 0 through the configured maximum, cooldown is 0 through 24 hours, and at least one valid soul is required. Soul values may be Akuma, Rev, Lamari, or their canonical ids.
+
+## Soul-bound equipment
+
+Implement `DragonAddonItem`, register it after the add-on metadata, and tag each
+stack created by the add-on:
+
+```java
+dragonAltar.registerItem(this, new DragonAddonItem() {
+    public String id() { return "ember-tools:frost-vestment"; }
+    public String displayName() { return "Frost Vestment"; }
+    public String soulId() { return "Akuma"; }
+});
+
+ItemStack vestment = new ItemStack(Material.DIAMOND_CHESTPLATE);
+dragonAltar.tagSoulBound(vestment, "ember-tools:frost-vestment");
+```
+
+Override `canEquip(Context)` for extra add-on rules, and listen to the
+cancellable `DragonAddonItemEquipEvent` for cross-plugin vetoes. DragonAltar
+checks soul ownership for helmet, chest, legs, feet, main hand, and off hand.
+Tags remain recognizable while the add-on is disabled, but enforcement resumes
+only after its item id is registered again.
+
+DragonAltar does not strip already-equipped items when a soul leaves. Use the
+`soulId()` carried by `DragonSoulTransferEvent` and `DragonbornLoseEvent` when
+the add-on needs that behavior.
 
 ## Cast lifecycle
 
@@ -288,6 +314,8 @@ DragonAltar enforces the primary server thread for:
 
 - `registerAddon`
 - `registerAbility`
+- `registerItem`
+- `tagSoulBound`
 - `unregisterAddon`
 - `cast`
 - `openSoulHistory`

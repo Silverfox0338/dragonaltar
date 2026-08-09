@@ -1,6 +1,6 @@
 # Ability Configuration
 
-This is the complete tuning reference for the shipped `abilities.yml` in DragonAltar 1.4.19. The [Abilities](Abilities) and [Resonances](Resonances) pages explain what players experience.
+This is the complete tuning reference for the shipped `abilities.yml` in DragonAltar 1.4.20. The [Abilities](Abilities) and [Resonances](Resonances) pages explain what players experience.
 
 ## Reading the values
 

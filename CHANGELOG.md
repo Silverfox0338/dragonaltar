@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.20 - 2026-08-08
+
+- Added API 2.1 registration and canonical PDC tagging for soul-bound add-on items.
+- Added shared soul ownership and add-on callback checks across all six player
+  equipment slots, with a cancellable equip event and configurable denial text.
+- Documented item lifecycle handling and the soul ids carried by transfer and
+  Dragonborn loss events.
+
 ## 1.4.19 - 2026-07-29
 
 - Removed the unused WorldEdit dependency, soft dependency, schematic settings,

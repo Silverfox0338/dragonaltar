@@ -1,5 +1,5 @@
 # All ordinary player text uses MiniMessage and may be translated here.
-config-version: 8
+config-version: 9
 no-permission: '<red>You do not have permission.</red>'
 player-only: '<red>This command requires a player.</red>'
 setup-incomplete: '<yellow>DragonAltar is installed but has not been configured. Run <white>/dragon setup begin</white>.</yellow>'
@@ -12,6 +12,7 @@ focus-restored: '<light_purple>Your Dragon Focus has been restored.</light_purpl
 focus-unavailable: '<red>Only Dragonborn have a Dragon Focus.</red>'
 focus-protected: '<red>Your Dragon Focus is soulbound and cannot be sold, traded, stored, or transferred.</red>'
 focus-inventory-full: '<red>Free one inventory slot, then run /dragon focus again.</red>'
+soul-bound-equip-denied: '<red><item> is bound to the <soul> soul.</red>'
 settings-updated: '<green>Dragon settings updated.</green>'
 ritual-refund: '<yellow>Your interrupted ritual offerings were returned.</yellow>'
 ritual-error: '<red>The ritual cannot begin: <reason></red>'

@@ -1,6 +1,6 @@
 # Public API
 
-DragonAltar publishes API version `2.0` through Bukkit's `ServicesManager`. Add-ons
+DragonAltar publishes API version `2.1` through Bukkit's `ServicesManager`. Add-ons
 should depend on the service interface and the `com.dragonaltar.api` packages,
 not the main plugin class or its data files.
 
@@ -68,7 +68,7 @@ api.registerAddon(this, details);
 
 Add-on ids are lowercase namespaces between 2 and 32 characters. Registering and
 unregistering must happen on the server thread. DragonAltar automatically removes
-an add-on's abilities when Bukkit disables its owner plugin.
+an add-on's abilities and item definitions when Bukkit disables its owner plugin.
 
 `api.addons()` returns the currently registered add-on metadata.
 
@@ -102,6 +102,42 @@ result. Exceptions are contained, logged, and reported as a failed cast.
 An add-on ability can override `canUse(Context)` and `ultimate()`. Ultimate
 abilities use DragonAltar's full-energy and shared ultimate-cooldown rules.
 
+## Adding soul-bound equipment
+
+Register an item definition after the add-on metadata, then tag each stack made
+by the add-on with its registered id:
+
+```java
+DragonAddonItem vestment = new DragonAddonItem() {
+    public String id() { return "ember-tools:frost-vestment"; }
+    public String displayName() { return "Frost Vestment"; }
+    public String soulId() { return "Akuma"; }
+
+    public DragonActionResult canEquip(Context context) {
+        return context.player().getWorld().getEnvironment() == World.Environment.NORMAL
+                ? DragonActionResult.ok()
+                : DragonActionResult.failure("The vestment is dormant in this realm.");
+    }
+};
+api.registerItem(this, vestment);
+
+ItemStack stack = new ItemStack(Material.DIAMOND_CHESTPLATE);
+api.tagSoulBound(stack, vestment.id());
+```
+
+Item ids follow the same add-on namespace rules as abilities. The PDC marker is
+`dragonaltar:soul_bound_item`; use `isSoulBound`, `soulBoundItemId`, and
+`itemIds` instead of reading it directly. DragonAltar checks helmet, chest,
+legs, boots, main-hand, and off-hand player equip attempts. The player must hold
+the registered soul, `canEquip` must succeed, and listeners must not cancel
+`DragonAddonItemEquipEvent`.
+
+The item and event contexts expose cloned stacks. Expected denials should return
+a failed `DragonActionResult`; callback exceptions are logged and denied. Tags
+survive an add-on being disabled, but enforcement is inactive until the item id
+is registered again. DragonAltar does not automatically unequip existing items
+when a soul moves or is lost.
+
 ## Bukkit events
 
 Events live under `com.dragonaltar.api.event`. Event prepare, ritual start, soul
@@ -115,12 +151,17 @@ Published event families include:
 - ritual start and complete
 - soul create, reserve, transfer start, and transfer complete
 - Dragonborn gain and loss
+- add-on item equip
 - ability select and cast
 - Dragon Energy change
 
 Events are server-side integration signals. An add-on must not publish, message,
 log for players, or otherwise reveal administrative participants or private
 custody. Use the snapshot API for anything players can see.
+
+`DragonSoulTransferEvent` and `DragonbornLoseEvent` both expose `soulId()`, so
+equipment add-ons can react to transfer, Limbo, fracture, or other loss paths
+without inferring the soul from player context.
 
 ## Compatibility
 

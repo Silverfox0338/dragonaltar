@@ -30,7 +30,7 @@ Then add DragonAltar as a provided dependency in the add-on's `pom.xml`:
   <dependency>
     <groupId>com.dragonaltar</groupId>
     <artifactId>dragonaltar</artifactId>
-    <version>1.4.19</version>
+    <version>1.4.20</version>
     <scope>provided</scope>
   </dependency>
   <dependency>
@@ -65,11 +65,14 @@ package example.embertools;
 
 import com.dragonaltar.api.DragonAltarApi;
 import com.dragonaltar.api.addon.DragonAddonAbility;
+import com.dragonaltar.api.addon.DragonAddonItem;
 import com.dragonaltar.api.addon.DragonAltarAddon;
 import com.dragonaltar.api.model.DragonActionResult;
 import org.bukkit.Bukkit;
 import org.bukkit.Particle;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Set;
@@ -90,6 +93,11 @@ public final class EmberToolsPlugin extends JavaPlugin {
                 "A free independent DragonAltar add-on"
         ));
         api.registerAbility(this, new EmberStep());
+        api.registerItem(this, new FrostVestment());
+
+        ItemStack vestment = new ItemStack(Material.DIAMOND_CHESTPLATE);
+        api.tagSoulBound(vestment, "ember-tools:frost-vestment");
+        // Give or craft the tagged stack through the add-on's normal gameplay.
     }
 
     private static final class EmberStep implements DragonAddonAbility {
@@ -115,10 +123,23 @@ public final class EmberToolsPlugin extends JavaPlugin {
             return DragonActionResult.ok();
         }
     }
+
+    private static final class FrostVestment implements DragonAddonItem {
+        @Override public String id() { return "ember-tools:frost-vestment"; }
+        @Override public String displayName() { return "Frost Vestment"; }
+        @Override public String soulId() { return "Akuma"; }
+
+        @Override
+        public DragonActionResult canEquip(Context context) {
+            return context.player().hasPermission("embertools.frost-vestment")
+                    ? DragonActionResult.ok()
+                    : DragonActionResult.failure("You cannot wear the Frost Vestment");
+        }
+    }
 }
 ```
 
-DragonAltar removes the registration automatically during plugin disable. Calling
+DragonAltar removes the ability and item registrations automatically during plugin disable. Calling
 `unregisterAddon(this)` manually is only needed when an add-on disables its own
 features while the Bukkit plugin remains enabled.
 
@@ -142,5 +163,10 @@ free. Review [LICENSE.md](LICENSE.md) before distribution.
 - Never expose administrative event participants or private custody.
 - Return a failed `DragonActionResult` instead of throwing for an expected
   gameplay denial.
+- Register item definitions before calling `tagSoulBound`. Tags remain on stacks
+  across restarts; enforcement resumes when the owning add-on registers the id.
+- Listen to `DragonAddonItemEquipEvent` for additional equip vetoes and to
+  `DragonSoulTransferEvent` or `DragonbornLoseEvent` when equipped items should
+  react to their soul moving. DragonAltar does not automatically unequip them.
 - Avoid blocking work in ability callbacks; schedule slow work asynchronously
   and return to the server thread before using Bukkit world APIs.

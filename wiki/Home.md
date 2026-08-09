@@ -1,4 +1,4 @@
-# DragonAltar 1.4.19
+# DragonAltar 1.4.20
 
 DragonAltar is a Paper plugin built around one server-wide Ancient Dragon story. Staff prepare an altar and the End fountain, players defeat the official respawned dragon, and three persistent Dragon Souls enter the world: Akuma, Rev, and Lamari.
 
@@ -8,10 +8,10 @@ Those souls do not disappear when a holder dies or leaves. They move through cla
 
 - Paper 1.21.4
 - Java 21
-- DragonAltar 1.4.19
+- DragonAltar 1.4.20
 - A configured End fountain and altar
 
-PlaceholderAPI and ScaledEnderDragon are optional. Their exact 1.4.19 behavior is covered in [Integrations](Integrations).
+PlaceholderAPI and ScaledEnderDragon are optional. Their exact 1.4.20 behavior is covered in [Integrations](Integrations).
 
 Version 1.4.19 removes retired settings and unused integration declarations,
 connects setup and recovery messages to live server events, and makes the

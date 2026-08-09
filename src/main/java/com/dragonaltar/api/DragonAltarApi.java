@@ -4,8 +4,10 @@ import com.dragonaltar.dragonevent.DragonEventState;
 import com.dragonaltar.eligibility.EligibilityService;
 import com.dragonaltar.soul.DragonSoul;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 import com.dragonaltar.api.addon.DragonAddonAbility;
+import com.dragonaltar.api.addon.DragonAddonItem;
 import com.dragonaltar.api.addon.DragonAltarAddon;
 import com.dragonaltar.api.model.DragonAbilityInfo;
 import com.dragonaltar.api.model.DragonActionResult;
@@ -45,6 +47,21 @@ public interface DragonAltarApi {
      * Registers an ability owned by an already registered add-on.
      */
     void registerAbility(Plugin owner, DragonAddonAbility ability);
+
+    /** Registers a soul-bound equipment definition owned by an add-on. */
+    void registerItem(Plugin owner, DragonAddonItem item);
+
+    /** Tags this stack with a registered add-on item id. */
+    void tagSoulBound(ItemStack item, String itemId);
+
+    /** Returns whether this stack carries a syntactically valid soul-bound item marker. */
+    boolean isSoulBound(ItemStack item);
+
+    /** Returns the namespaced item id stored on this stack, if valid. */
+    Optional<String> soulBoundItemId(ItemStack item);
+
+    /** Returns all currently registered add-on item ids. */
+    Collection<String> itemIds();
 
     boolean unregisterAddon(Plugin owner);
     Collection<DragonAltarAddon> addons();

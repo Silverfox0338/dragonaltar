@@ -1,4 +1,4 @@
-# DragonAltar 1.4.19 Release Notes
+# DragonAltar 1.4.20 Release Notes
 
 DragonAltar brings a persistent three-soul Dragonborn storyline to Paper 1.21.4. Server staff configure a physical altar and End fountain, run one protected vanilla dragon respawn event, and release Akuma, Rev, and Lamari into a long-running cycle of rituals, inheritance, reincarnation, instability, and recovery.
 
@@ -15,7 +15,15 @@ history interface; and register namespaced custom abilities that remain inside
 the normal DragonAltar energy and cooldown pipeline. Private staff custody and
 raw lineage are not exposed through the snapshot API.
 
-## What changed in 1.4.19
+## What changed in 1.4.20
+
+API 2.1 adds registered soul-bound add-on items, a shared
+`dragonaltar:soul_bound_item` marker, central ownership and callback checks for
+all six player equipment slots, and the cancellable
+`DragonAddonItemEquipEvent`. Add-ons can react to later soul movement through
+the soul ids already carried by transfer and Dragonborn loss events.
+
+## Earlier 1.4.19 changes
 
 This release removes settings and internal helpers that were left behind after
 their features changed. WorldEdit and schematic support are no longer declared

@@ -32,7 +32,8 @@ class AbilityConfigResourcesTest {
         assertTrue(abilities.getInt("resonances.glacial-bastion.ward-charges")>0);
         assertTrue(abilities.getDouble("resonances.volcanic-aegis.retaliation-damage")>0);
         assertTrue(abilities.getInt("resonances.dragon-trinity.pulse-interval-ticks")>0);
-        assertEquals(8,messages.getInt("config-version"));
+        assertEquals(9,messages.getInt("config-version"));
+        assertTrue(messages.getString("soul-bound-equip-denied","").contains("<soul>"));
         assertTrue(messages.getString("energy-hud","").contains("<status>"));
         assertTrue(messages.getString("energy-hud","").contains("<resonance_cooldown>"));
     }

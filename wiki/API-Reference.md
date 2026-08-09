@@ -1,6 +1,6 @@
 # API Reference
 
-DragonAltar 1.4.19 publishes API contract `2.0`. Load it through Bukkit:
+DragonAltar 1.4.20 publishes API contract `2.1`. Load it through Bukkit:
 
 ```java
 DragonAltarApi api = Bukkit.getServicesManager().load(DragonAltarApi.class);
@@ -19,7 +19,7 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 
 | Method | Parameters | Return | Notes |
 |---|---|---|---|
-| `String apiVersion()` | None | `2.0` | API contract version, independent of plugin release |
+| `String apiVersion()` | None | `2.1` | API contract version, independent of plugin release |
 | `DragonEventInfo event()` | None | Immutable event snapshot | State, altar state, optional session UUID, optional canonical dragon UUID |
 | `Optional<DragonRitualInfo> activeRitual()` | None | Active initial ritual | Empty when inactive; consumed item data is never included |
 | `Collection<DragonSoulInfo> souls()` | None | Immutable list of all public soul snapshots | Exactly the currently created canonical souls |
@@ -39,7 +39,7 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 | `Collection<String> abilityIds()` | None | Every registered ability id | Includes built-ins, resonances, and live add-on abilities |
 | `Optional<DragonAbilityInfo> ability(String id)` | Ability id, case-insensitive | Public metadata | Empty when unknown; null also returns empty |
 | `int energy(Player player)` | Player | Current energy | Returns 0 when no public Dragonborn state |
-| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.19 configuration |
+| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.20 configuration |
 | `boolean selectAbility(Player player, String abilityId)` | Player, id | Whether final selection matches | Main thread; needs base permission, holder state, registered and available id; selection event may cancel |
 
 `cast` returns the internal localization key for some built-in failures and a plain message for add-on failures. Treat the string as diagnostic unless your add-on owns the returned message.
@@ -50,6 +50,11 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 |---|---|---|---|
 | `void registerAddon(Plugin owner, DragonAltarAddon addon)` | Enabled owner plugin, metadata | None | Main thread; validates id and uniqueness |
 | `void registerAbility(Plugin owner, DragonAddonAbility ability)` | Registered owner, ability | None | Main thread; validates namespace, metadata, limits, souls, and registry uniqueness |
+| `void registerItem(Plugin owner, DragonAddonItem item)` | Registered owner, item definition | None | Main thread; validates namespace, display name, soul, and uniqueness |
+| `void tagSoulBound(ItemStack item, String itemId)` | Mutable stack, registered item id | None | Main thread; writes `dragonaltar:soul_bound_item`; rejects AIR and unknown ids |
+| `boolean isSoulBound(ItemStack item)` | Item stack | Marker state | True for a syntactically valid marker, including while its add-on is disabled |
+| `Optional<String> soulBoundItemId(ItemStack item)` | Item stack | Tagged namespaced id | Empty for null, AIR, missing, or malformed markers |
+| `Collection<String> itemIds()` | None | Immutable registered ids | Live add-on item registry |
 | `boolean unregisterAddon(Plugin owner)` | Owner plugin | True if removed | Main thread; null returns false; removes all owned abilities |
 | `Collection<DragonAltarAddon> addons()` | None | Immutable live registration metadata | Registration order |
 
@@ -128,6 +133,16 @@ Nested public record `DragonAddonAbility.Context`:
 | `api()` | `DragonAltarApi` | Same public service |
 
 The record has its generated constructor `Context(Player, DragonAltarApi)`, accessors, equality, hash code, and string representation.
+
+### `DragonAddonItem`
+
+Required methods are `id()`, `displayName()`, and `soulId()`. The id must use the
+registered add-on namespace and the soul may be a canonical id or public name.
+`canEquip(Context)` defaults to `DragonActionResult.ok()`.
+
+The context contains `Player player`, `EquipmentSlot slot`, cloned `ItemStack
+item`, and `DragonAltarApi api`. Its `item()` accessor returns another clone.
+Exceptions and null results from `canEquip` are logged and deny the attempt.
 
 ## Model types
 
@@ -276,10 +291,16 @@ Every concrete event implements `getHandlers()` and a static `getHandlerList()` 
 | `DragonAbilitySelectEvent` | Yes | `(Player player, String abilityId)`, `player()`, `abilityId()` | Available ability selection is about to persist |
 | `DragonAbilityCastEvent` | Yes | `(Player player, String abilityId)`, `player()`, `abilityId()` | Cast begins before cooldown and energy checks |
 | `DragonEnergyChangeEvent` | Yes | `(Player player, int oldEnergy, int newEnergy)`, `player()`, `oldEnergy()`, `newEnergy()`, `newEnergy(int)` | Energy is about to change |
+| `DragonAddonItemEquipEvent` | Yes | `(Player player, String itemId, String soulId, EquipmentSlot slot, ItemStack item)` and matching accessors | Soul ownership and the registered item's callback passed, before a player equip action |
 
 `DragonEnergyChangeEvent.newEnergy(int)` lets a listener replace the proposed value. DragonAltar clamps the final value back into 0 through maximum after event handlers return.
 
 `DragonSoulTransferStartEvent` is dispatched first. If it is not cancelled, the compatibility `DragonSoulTransferEvent` is dispatched before the durable assignment. Cancelling either event prevents the transfer. `DragonSoulTransferCompleteEvent` is dispatched after a successful assignment.
+
+`DragonSoulTransferEvent` and `DragonbornLoseEvent` expose `soulId()` for item
+lifecycle reactions. DragonAltar does not automatically unequip registered gear
+when a soul is lost. Equip enforcement covers head, chest, legs, feet, main hand,
+and off hand for cancellable player actions and dispenser armor placement.
 
 Do not construct and call DragonAltar events to force gameplay. They are notifications and cancellation points around DragonAltar-owned state changes.
 

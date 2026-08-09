@@ -69,10 +69,10 @@ class PackagedResourcesTest {
         assertFalse(general.contains("forced-removal-ritual.participant-count"));
 
         YamlConfiguration messages=load("messages.yml");
-        assertEquals(8,messages.getInt("config-version"));
+        assertEquals(9,messages.getInt("config-version"));
         assertFalse(messages.contains("prefix"));
         assertFalse(messages.contains("egg-hologram"));
-        for(String path:List.of("player-only","setup-incomplete","event-recovery-required","ritual-error","event-started"))
+        for(String path:List.of("player-only","setup-incomplete","event-recovery-required","ritual-error","event-started","soul-bound-equip-denied"))
             assertTrue(messages.contains(path),"messages.yml must retain active key "+path);
     }
 
