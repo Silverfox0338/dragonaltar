@@ -45,6 +45,33 @@ safety:
 
 Keep the destructive override false for normal operation. Operators do not bypass it.
 
+## Development and add-on testing mode
+
+Use the dedicated mode only on a disposable development server:
+
+```yaml
+server-mode: DEVELOPMENT
+```
+
+Grant yourself `dragonaltar.use` and `dragonaltar.developer`, reload or restart,
+then run:
+
+```text
+/dragon dev soul self Akuma
+/dragon dev soul self Rev
+/dragon dev soul self Lamari
+```
+
+The command bypasses altar setup, event completion, eligibility, and ritual
+requirements. It creates the requested canonical soul if it does not exist,
+switches your current test soul when possible, starts the normal ability tasks,
+gives the real Dragon Focus and passives, fills energy, and fires the same API
+events as ordinary assignment. It never advances or activates the altar event
+and refuses to take a soul currently held by another player.
+
+Do not use `DEVELOPMENT` on a production world. Return to `BETA` for normal
+setup testing or `PRODUCTION` after completing the release checklist.
+
 The default ability configuration keeps Dragon Energy at 100, bounds Rev marks and per-target gains, ignores weak-mob Heat farming, caps Inferno Hunt mobility and Rampage, limits particles, and uses persistent shared ultimate and resonance cooldowns.
 
 `focus.blocked-command-prefixes` blocks held-item sale commands such as `/ah sell`. `focus.blocked-inventory-command-prefixes` blocks bulk commands such as `/sellall` whenever a Focus is present. Focus items are owner-bound, cannot enter external inventories, and duplicate or escaped copies are removed automatically.

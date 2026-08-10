@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.4.24-SNAPSHOT - development soul testing
+
+### Development mode
+
+- Added `DEVELOPMENT` as an explicit non-production server mode for plugin and
+  add-on testing.
+- Added `/dragon dev soul self <Akuma|Rev|Lamari>`. It creates the requested
+  canonical soul when necessary and assigns it directly to the invoking player
+  without requiring altar setup, the Ancient Dragon Event, eligibility, or a
+  ritual.
+- Development self-assignment starts the normal runtime services, applies the
+  real Dragonborn passive state and Dragon Focus, fills Dragon Energy, selects
+  Wings, persists ownership normally, and fires the standard public soul and
+  Dragonborn events used by add-ons.
+- The command can switch the developer between souls, refuses to take a soul
+  held or reserved by another player, requires `dragonaltar.use` and
+  `dragonaltar.developer`, and is unavailable in `BETA` and `PRODUCTION` modes.
+- Kept public API contract `3.0`; add-ons exercise the same production API and
+  event paths in development mode.
+
 ## 1.4.23 - 2026-08-09
 
 ### 26.x compatibility

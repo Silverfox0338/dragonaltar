@@ -5,6 +5,22 @@ DragonAltar 1.4.23 publishes API contract `3.0` through Bukkit's
 only `com.dragonaltar.api` packages. Do not read DragonAltar data YAML, cast to
 its implementation, or import gameplay implementation packages.
 
+## Setup-free test server
+
+On a disposable add-on development server, set `server-mode: DEVELOPMENT` in
+DragonAltar's `config.yml`, grant your test account `dragonaltar.use` and
+`dragonaltar.developer`, then run:
+
+```text
+/dragon dev soul self Akuma
+```
+
+Use `Rev` or `Lamari` to switch kits. The command creates and persists the real
+soul state, starts ability services, grants the normal Focus and passives, fills
+energy, and emits the same public API events as a gameplay assignment. It does
+not require altar setup and does not advance the Ancient Dragon Event. A soul
+already held by another player is never taken.
+
 ## License rules
 
 DragonAltar is owned by Silverfox0338.

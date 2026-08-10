@@ -5,6 +5,12 @@ DragonAltar is a Paper plugin for an SMP-wide Ancient Dragon storyline. It runs 
 DragonAltar 1.4.23 supports Paper and Purpur 1.21 through 1.21.11 on Java 21,
 plus Paper and Purpur 26.1.2 through 26.2 on Java 25.
 
+The `1.4.24-SNAPSHOT` development build adds a setup-free addon testing mode.
+Set `server-mode: DEVELOPMENT`, grant `dragonaltar.use` and
+`dragonaltar.developer`, and run
+`/dragon dev soul self <Akuma|Rev|Lamari>` to receive a fully functional soul
+without configuring or advancing the altar event.
+
 ## Highlights
 
 - Exactly three named Dragonborn: Akuma, Rev, and Lamari
@@ -124,8 +130,8 @@ mvn clean verify
 ```
 
 The server release JAR is written to
-`dragonaltar/target/DragonAltar-1.4.23.jar`; the standalone public API is written
-to `dragonaltar-api/target/dragonaltar-api-1.4.23.jar`. Maven compiles
+`dragonaltar/target/DragonAltar-1.4.24-SNAPSHOT.jar`; the standalone public API
+is written to `dragonaltar-api/target/dragonaltar-api-1.4.24-SNAPSHOT.jar`. Maven compiles
 with `--release 21`, runs the JUnit suite, enforces deterministic formatting,
 runs high-confidence SpotBugs analysis, writes JaCoCo coverage reports, filters
 only `plugin.yml`, and produces deterministic archive timestamps.

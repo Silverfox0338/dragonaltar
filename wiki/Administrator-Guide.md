@@ -75,6 +75,20 @@ Never copy a token from another operator or confirm a preview you did not read.
 
 ## Production safety
 
+For setup-free plugin or add-on testing on a disposable server, set
+`server-mode: DEVELOPMENT`, grant `dragonaltar.use` and
+`dragonaltar.developer`, and use:
+
+```text
+/dragon dev soul self <Akuma|Rev|Lamari>
+```
+
+This creates and assigns a normal persisted soul to the invoking player, starts
+ability runtime tasks, grants the Focus and passives, fills energy, and fires
+the normal public API events without configuring or advancing the altar event.
+It can switch between unoccupied souls but will not take another player's soul.
+Return the server to `BETA` or `PRODUCTION` before normal use.
+
 In `PRODUCTION` mode:
 
 - Forced altar state changes are blocked

@@ -38,5 +38,6 @@ forced-removal-ritual:
   animation-duration-ticks: 160
   backfire-limbo-hours: 12
 developer:
-  # Developer commands additionally require dragonaltar.developer.
+  # Developer commands additionally require dragonaltar.developer. Set
+  # server-mode to DEVELOPMENT to enable setup-free self-assignment.
   enabled-in-beta: true

@@ -27,7 +27,7 @@ Shipped `config-version`: `3`.
 
 | Path | Default | Effect |
 |---|---|---|
-| `server-mode` | `BETA` | `BETA` or `PRODUCTION` |
+| `server-mode` | `BETA` | `DEVELOPMENT`, `BETA`, or `PRODUCTION` |
 | `safety.allow-destructive-commands-in-production` | `false` | Allows forced state and developer branches in production when deliberately enabled |
 
 Operators do not bypass the production gate.
@@ -91,7 +91,12 @@ The caller count and required weakness-potion count are derived from the ritual'
 
 ### Developer branch
 
-`developer.enabled-in-beta` defaults to `true`. When false, `/dragon dev` is blocked in Beta. In Production, every `/dragon dev` command is blocked unless the destructive production override is true, including read-only-looking diagnostics.
+`developer.enabled-in-beta` defaults to `true`. When false, `/dragon dev` is
+blocked in Beta. `DEVELOPMENT` enables developer commands and the setup-free
+`/dragon dev soul self <Akuma|Rev|Lamari>` workflow. In Production, every
+`/dragon dev` command is blocked unless the destructive production override is
+true, including read-only-looking diagnostics; self-assignment remains blocked
+outside `DEVELOPMENT` regardless of that override.
 
 ## `altar.yml`
 
@@ -441,6 +446,19 @@ Targeted migrations cover:
 Deleting a key causes its packaged default to return at the next load. Use a documented boolean or allowed zero value to disable a feature.
 
 ## Production baseline
+
+For a disposable plugin or add-on test server, use:
+
+```yaml
+server-mode: DEVELOPMENT
+```
+
+With `dragonaltar.use` and `dragonaltar.developer`, run `/dragon dev soul self
+<Akuma|Rev|Lamari>`. This bypasses setup and event progression while creating
+normal persisted ownership, passives, Focus, energy, ability tasks, and public
+API events. It refuses to take a soul held or reserved by someone else.
+
+For production, use:
 
 ```yaml
 server-mode: PRODUCTION

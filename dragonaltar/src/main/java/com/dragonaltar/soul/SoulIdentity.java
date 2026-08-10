@@ -31,6 +31,14 @@ public enum SoulIdentity {
 		throw new IllegalArgumentException("Unknown soul: " + id);
 	}
 
+	public static SoulIdentity fromInput(String value) {
+		for (SoulIdentity identity : values())
+			if (identity.id.equalsIgnoreCase(value) || identity.displayName.equalsIgnoreCase(value)
+					|| identity.name().equalsIgnoreCase(value))
+				return identity;
+		throw new IllegalArgumentException("Unknown soul: " + value + ". Use Akuma, Rev, or Lamari");
+	}
+
 	public static String displayName(String id) {
 		try {
 			return fromId(id).displayName;

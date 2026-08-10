@@ -833,6 +833,32 @@ public final class DragonCommand implements TabExecutor {
 			plugin.souls().create(a[3]);
 			return true;
 		}
+		if (a.length > 3 && a[1].equals("soul") && a[2].equals("self")) {
+			if (plugin.configService().serverMode() != ServerMode.DEVELOPMENT)
+				throw new IllegalStateException("Self-assignment requires server-mode: DEVELOPMENT");
+			Player player = player(s);
+			SoulIdentity requested = SoulIdentity.fromInput(a[3]);
+			DragonSoul target = plugin.souls().byId(requested.id()).orElse(null);
+			if (target != null && target.holder() != null && !target.holder().equals(player.getUniqueId()))
+				throw new IllegalStateException(requested.displayName() + " is already held by another player");
+			if (target != null && target.reservedFor() != null && !target.reservedFor().equals(player.getUniqueId()))
+				throw new IllegalStateException(requested.displayName() + " is reserved for another player");
+			Optional<DragonSoul> current = plugin.souls().byHolder(player.getUniqueId());
+			if (current.isPresent() && !current.get().id().equals(requested.id()))
+				plugin.souls().unclaimed(current.get().id(), adminReason("DEV_SELF_SWITCH", s, player.getUniqueId()));
+			if (target == null)
+				plugin.souls().create(requested.id());
+			if (plugin.souls().byHolder(player.getUniqueId()).isEmpty())
+				plugin.souls().assign(requested.id(), player.getUniqueId(),
+						adminReason("DEV_SELF_ASSIGN", s, player.getUniqueId()));
+			plugin.ensureRuntimeTasks();
+			plugin.dragonborn().apply(player);
+			plugin.abilities().setEnergy(player, plugin.abilities().maxEnergy());
+			plugin.abilities().select(player, "wings");
+			s.sendMessage("Development soul ready: " + requested.displayName()
+					+ ". Altar and Ancient Dragon Event progression were not changed.");
+			return true;
+		}
 		if (a.length > 3 && a[1].equals("soul") && a[2].equals("delete")) {
 			danger(s, "soul-delete", List.of(a[3]), () -> plugin.souls().delete(a[3]));
 			return true;
@@ -1160,8 +1186,11 @@ public final class DragonCommand implements TabExecutor {
 					"soul-depart", "soul-arrive", "pvp-transfer", "natural-transfer", "ritual-start",
 					"ritual-complete"), a[2]);
 		if (a.length == 3 && a[0].equalsIgnoreCase("dev") && a[1].equalsIgnoreCase("soul"))
-			return filter(List.of("list", "dump", "create", "delete", "setstate", "assign", "unassign",
+			return filter(List.of("self", "list", "dump", "create", "delete", "setstate", "assign", "unassign",
 					"duplicate-check", "repair"), a[2]);
+		if (a.length == 4 && a[0].equalsIgnoreCase("dev") && a[1].equalsIgnoreCase("soul")
+				&& a[2].equalsIgnoreCase("self"))
+			return filter(List.of("Akuma", "Rev", "Lamari"), a[3]);
 		if (a.length == 3 && a[0].equalsIgnoreCase("dev") && a[1].equalsIgnoreCase("data"))
 			return filter(List.of("dump", "dump-player", "dump-soul", "save", "reload", "validate", "backup", "restore",
 					"clear-cache"), a[2]);

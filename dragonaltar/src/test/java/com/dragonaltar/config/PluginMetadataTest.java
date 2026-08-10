@@ -17,7 +17,7 @@ class PluginMetadataTest {
 			YamlConfiguration yaml = new YamlConfiguration();
 			yaml.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
 			assertEquals("DragonAltar", yaml.getString("name"));
-			assertEquals("1.4.23", yaml.getString("version"));
+			assertEquals("1.4.24-SNAPSHOT", yaml.getString("version"));
 			assertEquals("1.21", yaml.getString("api-version"));
 			assertEquals("com.dragonaltar.DragonAltarPlugin", yaml.getString("main"));
 			assertEquals(Set.of("PlaceholderAPI", "ScaledEnderDragon"), Set.copyOf(yaml.getStringList("softdepend")));

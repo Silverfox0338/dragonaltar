@@ -16,7 +16,7 @@ public final class ConfigValidator {
 	public List<String> validate() {
 		List<String> errors = new ArrayList<>();
 		String mode = config.general().getString("server-mode", "").toUpperCase(Locale.ROOT);
-		if (!Set.of("BETA", "PRODUCTION").contains(mode))
+		if (!Set.of("DEVELOPMENT", "BETA", "PRODUCTION").contains(mode))
 			errors.add("config.yml: invalid server-mode");
 		long confirmationSeconds = config.general().getLong("event.confirmation-seconds", 0);
 		if (confirmationSeconds <= 0 || confirmationSeconds > 300)

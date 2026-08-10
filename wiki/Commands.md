@@ -236,10 +236,13 @@ Additional permission: `dragonaltar.developer`.
 
 The whole branch is available only when:
 
+- `server-mode: DEVELOPMENT`, or
 - `server-mode: BETA` and `developer.enabled-in-beta: true`, or
 - Production destructive commands have been explicitly enabled
 
-Without the production override, even developer diagnostics are refused in Production.
+Without the production override, even developer diagnostics are refused in
+Production. Setup-free self-assignment is always restricted to `DEVELOPMENT`,
+even when the production override is enabled.
 
 ### Developer event
 
@@ -283,6 +286,7 @@ Without the production override, even developer diagnostics are refused in Produ
 
 | Syntax | Sender | Purpose | Safety |
 |---|---|---|---|
+| `/dragon dev soul self <Akuma\|Rev\|Lamari>` | Player | Create or switch to a fully functional test soul without altar setup | Immediate; `DEVELOPMENT` mode only; never takes another player's reserved or held soul |
 | `/dragon dev soul list` | Either | Validate and list internal soul state | Read-only, do not publish output |
 | `/dragon dev soul duplicate-check` | Either | Same validation and listing path | Read-only |
 | `/dragon dev soul dump <soul-id>` | Either | Print restricted internal soul diagnostics | Keep the output private |

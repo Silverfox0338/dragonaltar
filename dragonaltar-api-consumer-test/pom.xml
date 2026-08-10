@@ -5,7 +5,7 @@
   <parent>
     <groupId>com.dragonaltar</groupId>
     <artifactId>dragonaltar-parent</artifactId>
-    <version>1.4.23</version>
+    <version>1.4.24-SNAPSHOT</version>
   </parent>
   <artifactId>dragonaltar-api-consumer-test</artifactId>
   <name>DragonAltar API consumer contract test</name>

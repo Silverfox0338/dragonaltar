@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.dragonaltar</groupId>
   <artifactId>dragonaltar-parent</artifactId>
-  <version>1.4.23</version>
+  <version>1.4.24-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>DragonAltar build</name>
   <description>Reactor build for the DragonAltar plugin and its public add-on API.</description>
@@ -33,7 +33,7 @@
     <paper.api.version>1.21-R0.1-SNAPSHOT</paper.api.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.build.outputTimestamp>2026-08-10T02:11:05Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-08-10T02:50:38Z</project.build.outputTimestamp>
     <junit.version>5.11.4</junit.version>
     <jacoco.version>0.8.14</jacoco.version>
     <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>
