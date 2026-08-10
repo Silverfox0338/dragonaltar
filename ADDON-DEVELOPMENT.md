@@ -29,7 +29,7 @@ and use `dragonaltar-api` as a provided dependency; do not depend on the
   <dependency>
     <groupId>com.dragonaltar</groupId>
     <artifactId>dragonaltar-api</artifactId>
-    <version>1.4.22</version>
+    <version>1.4.23</version>
     <scope>provided</scope>
   </dependency>
   <dependency>
@@ -42,7 +42,7 @@ and use `dragonaltar-api` as a provided dependency; do not depend on the
 ```
 
 `provided` is important: do not shade or bundle DragonAltar into an add-on.
-The API artifact version matches its plugin release (`1.4.22` here), while
+The API artifact version matches its plugin release (`1.4.23` here), while
 `api.apiVersion()` reports the independent public contract version (`3.0`).
 
 GitHub's Maven registry requires authentication. Store a GitHub username and a

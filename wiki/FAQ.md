@@ -102,15 +102,15 @@ DragonAltar is owned by Silverfox0338.
 
 ## Add-on developer questions
 
-### What API version ships with DragonAltar 1.4.22?
+### What API version ships with DragonAltar 1.4.23?
 
 API contract `3.0`. The Maven artifact version matches the plugin release:
-`com.dragonaltar:dragonaltar-api:1.4.22`.
+`com.dragonaltar:dragonaltar-api:1.4.23`.
 
 ### How do I get the API?
 
 Add the GitHub Packages repository and the provided Maven dependency
-`com.dragonaltar:dragonaltar-api:1.4.22`. Configure `~/.m2/settings.xml` with a
+`com.dragonaltar:dragonaltar-api:1.4.23`. Configure `~/.m2/settings.xml` with a
 classic GitHub token carrying `read:packages`, declare `depend: [DragonAltar]`,
 and load `DragonAltarApi.class` from Bukkit's `ServicesManager` during
 `onEnable`. See [Add-on Development](Add-on-Development#maven-setup) for the

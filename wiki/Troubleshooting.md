@@ -328,7 +328,7 @@ Do not cast to `DragonAltarApiImpl`. Load `DragonAltarApi` from `ServicesManager
 
 Provide:
 
-- DragonAltar 1.4.22
+- DragonAltar 1.4.23
 - Paper build
 - Java version
 - Reproduction steps

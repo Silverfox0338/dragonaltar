@@ -1,4 +1,4 @@
-## DragonAltar 1.4.22
+## DragonAltar 1.4.23
 
 - [Home](Home)
 - [Installation](Installation)

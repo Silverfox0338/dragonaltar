@@ -1,7 +1,7 @@
 # API Reference
 
-DragonAltar 1.4.22 publishes API contract `3.0` and the Maven artifact
-`com.dragonaltar:dragonaltar-api:1.4.22`. Load the service through Bukkit:
+DragonAltar 1.4.23 publishes API contract `3.0` and the Maven artifact
+`com.dragonaltar:dragonaltar-api:1.4.23`. Load the service through Bukkit:
 
 ```xml
 <repositories>
@@ -14,7 +14,7 @@ DragonAltar 1.4.22 publishes API contract `3.0` and the Maven artifact
 <dependency>
   <groupId>com.dragonaltar</groupId>
   <artifactId>dragonaltar-api</artifactId>
-  <version>1.4.22</version>
+  <version>1.4.23</version>
   <scope>provided</scope>
 </dependency>
 ```
@@ -62,7 +62,7 @@ Parameters documented as `Player`, `Plugin`, `UUID`, ability id, or metadata are
 | `Collection<String> abilityIds()` | None | Every registered ability id | Includes built-ins, resonances, and live add-on abilities |
 | `Optional<DragonAbilityInfo> ability(String id)` | Ability id, case-insensitive | Public metadata | Empty when unknown; null also returns empty |
 | `int energy(Player player)` | Player | Current energy | Returns 0 when no public Dragonborn state |
-| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.22 configuration |
+| `int maximumEnergy()` | None | Configured maximum | Must be 100 in a valid 1.4.23 configuration |
 | `boolean selectAbility(Player player, String abilityId)` | Player, id | Whether final selection matches | Main thread; needs base permission, holder state, registered and available id; selection event may cancel |
 
 `cast` returns the internal localization key for some built-in failures and a plain message for add-on failures. Treat the string as diagnostic unless your add-on owns the returned message.

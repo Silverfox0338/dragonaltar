@@ -4,7 +4,7 @@ This guide follows the normal operating path from installation to recovery. Exac
 
 ## Normal operating sequence
 
-1. Install DragonAltar on Paper or Purpur 1.21-1.21.11 with Java 21.
+1. Install DragonAltar on Paper or Purpur 1.21-1.21.11 with Java 21, or 26.1.2-26.2 with Java 25.
 2. Leave `server-mode: BETA` during setup and testing.
 3. Complete the guided altar and fountain setup.
 4. Run all three checks:

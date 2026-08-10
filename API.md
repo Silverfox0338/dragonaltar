@@ -7,8 +7,8 @@ not the main plugin class or its data files.
 ## Maven dependency
 
 Released API artifacts use the same version as the DragonAltar plugin release
-that provides them. For DragonAltar 1.4.22, the coordinates are
-`com.dragonaltar:dragonaltar-api:1.4.22`.
+that provides them. For DragonAltar 1.4.23, the coordinates are
+`com.dragonaltar:dragonaltar-api:1.4.23`.
 
 Add the GitHub Packages repository and the API as a provided dependency:
 
@@ -24,7 +24,7 @@ Add the GitHub Packages repository and the API as a provided dependency:
   <dependency>
     <groupId>com.dragonaltar</groupId>
     <artifactId>dragonaltar-api</artifactId>
-    <version>1.4.22</version>
+    <version>1.4.23</version>
     <scope>provided</scope>
   </dependency>
 </dependencies>
@@ -227,7 +227,7 @@ player context.
 ## Compatibility
 
 The Maven artifact version tracks the plugin release version: API artifact
-`1.4.22` is supplied by plugin `1.4.22`. The runtime contract version returned by
+`1.4.23` is supplied by plugin `1.4.23`. The runtime contract version returned by
 `api.apiVersion()` is separate and is `3.0` for this release. New methods and
 records may be added in a compatible `3.x` contract; removals, changed method
 descriptors, or incompatible record changes require a new contract major. Add-ons

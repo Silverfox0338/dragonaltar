@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.dragonaltar</groupId>
   <artifactId>dragonaltar-parent</artifactId>
-  <version>1.4.22</version>
+  <version>1.4.23</version>
   <packaging>pom</packaging>
   <name>DragonAltar build</name>
   <description>Reactor build for the DragonAltar plugin and its public add-on API.</description>
@@ -26,15 +26,14 @@
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <!--
-      Compile against the oldest server API we claim to support. Newer 1.21.x
-      Paper/Purpur releases are binary-compatible with this baseline, while
-      compiling against a later patch can accidentally introduce calls that
-      fail on 1.21.0 at runtime.
+      Compile the release artifact against the oldest server API we support.
+      Newer 1.21.x and 26.x targets are verified separately so later-only calls
+      cannot accidentally enter the Java 21-compatible release JAR.
     -->
     <paper.api.version>1.21-R0.1-SNAPSHOT</paper.api.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.build.outputTimestamp>2026-08-09T09:38:26Z</project.build.outputTimestamp>
+    <project.build.outputTimestamp>2026-08-10T02:11:05Z</project.build.outputTimestamp>
     <junit.version>5.11.4</junit.version>
     <jacoco.version>0.8.14</jacoco.version>
     <spotbugs-maven-plugin.version>4.10.3.0</spotbugs-maven-plugin.version>

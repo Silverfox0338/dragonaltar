@@ -1,5 +1,38 @@
 # Changelog
 
+## 1.4.23 - 2026-08-09
+
+### 26.x compatibility
+
+- Added compilation targets for the latest stable Paper 26.1.2 and 26.2 APIs
+  under Java 25 while retaining the Paper 1.21 minimum-API release build under
+  Java 21.
+- Added live server-start smoke tests for Paper 26.1.2 and 26.2. CI downloads the
+  latest stable server build from Paper's official downloads service, installs
+  the minimum-API-built DragonAltar JAR, waits for startup, verifies that the
+  plugin enabled without linkage errors, and shuts the server down.
+- Replaced deprecated `Attribute.valueOf(...)` compatibility calls with Bukkit
+  registry lookups supporting both the original `generic.*` attribute keys and
+  the current keys used by later 1.21 and 26.x servers.
+- Kept Java 21 bytecode and `api-version: '1.21'` so one JAR can serve the 1.21
+  line on Java 21 and the 26.x line on Java 25.
+- Kept public API contract `3.0`; no API interface, model, event, or add-on hook
+  changed for 26.x compatibility.
+
+### Test matrix
+
+- Full tests, formatting, static analysis, API boundary checks, and packaging:
+  Paper 1.21 API on Java 21.
+- Compile guard: Paper 1.21.11 API on Java 21.
+- Compile guards: Paper 26.1.2 and 26.2 APIs on Java 25.
+- Runtime startup: latest stable Paper 26.1.2 and 26.2 servers on Java 25.
+- Local smoke validation passed on Paper 26.1.2 build 74 and Paper 26.2 build
+  111: DragonAltar enabled and both servers reached ready state without linkage
+  errors.
+- Completed live Paper and Purpur gameplay validation across the supported 1.21
+  and 26.x targets, including abilities, rituals, persistence, integrations,
+  shutdown, and restart behavior.
+
 ## 1.4.22 - 2026-08-09
 
 ### Compatibility

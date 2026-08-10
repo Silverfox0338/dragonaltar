@@ -1,14 +1,16 @@
 # Installing DragonAltar
 
-DragonAltar 1.4.22 supports Paper and Purpur 1.21 through 1.21.11 on Java 21. Paper and optional plugin APIs are not bundled in the DragonAltar JAR.
+DragonAltar 1.4.23 supports Paper and Purpur 1.21 through 1.21.11 on Java 21,
+plus Paper and Purpur 26.1.2 through 26.2 on Java 25. Paper and optional plugin
+APIs are not bundled in the DragonAltar JAR.
 
 ## Fresh installation
 
 1. Stop the Paper server.
-2. Confirm that the server actually starts with Java 21.
-3. Put `DragonAltar-1.4.22.jar` in the server's `plugins` directory.
+2. Confirm that the server starts with Java 21 for Minecraft 1.21 or Java 25 for Minecraft 26.x.
+3. Put `DragonAltar-1.4.23.jar` in the server's `plugins` directory.
 4. Start the server once.
-5. Confirm that the console reports DragonAltar 1.4.22 and does not report a configuration validation failure.
+5. Confirm that the console reports DragonAltar 1.4.23 and does not report a configuration validation failure.
 6. Stop the server and review the six generated configuration files under `plugins/DragonAltar`.
 7. Start the server and complete [Altar Setup](Altar-Setup).
 8. Run `/dragon system validate`, `/dragon setup validate`, and `/dragon system health`.
@@ -19,9 +21,10 @@ The generated directories include `data`, `backups`, and `logs`.
 
 ## Required and optional plugins
 
-| Component | Required | What 1.4.22 does |
+| Component | Required | What 1.4.23 does |
 |---|---:|---|
-| Paper or Purpur 1.21-1.21.11 | Yes | Provides the server API and vanilla Ender Dragon respawn controls |
+| Paper or Purpur 1.21-1.21.11 on Java 21 | Yes | Provides the server API and vanilla Ender Dragon respawn controls |
+| Paper or Purpur 26.1.2-26.2 on Java 25 | Yes, instead of the 1.21 line | Provides the current server API with the same DragonAltar JAR |
 | PlaceholderAPI | No | Registers the `%dragonaltar_...%` placeholders |
 | ScaledEnderDragon | No | Lets its normal scaling and rewards observe DragonAltar's vanilla respawned dragon |
 
@@ -42,7 +45,7 @@ It merges missing defaults and runs strict validation. If validation fails durin
 
 The initial altar locations are blank. This is expected. Use `/dragon setup begin` rather than typing serialized locations by hand.
 
-## Upgrading to 1.4.22
+## Upgrading to 1.4.23
 
 > Stop the server before copying or restoring DragonAltar data. Do not replace installed YAML files with fresh bundled copies.
 
@@ -51,7 +54,7 @@ The initial altar locations are blank. This is expected. Use `/dragon setup begi
 3. Keep the previous DragonAltar JAR with that backup.
 4. Replace only the plugin JAR.
 5. Start Paper and read the DragonAltar startup messages.
-6. Run `/dragon system version` and confirm `1.4.22`.
+6. Run `/dragon system version` and confirm `1.4.23`.
 7. Run `/dragon system validate`.
 8. Run `/dragon altar validate`.
 9. Run `/dragon system health`.
@@ -87,7 +90,7 @@ mvn clean package
 The verified JAR is written to:
 
 ```text
-dragonaltar/target/DragonAltar-1.4.22.jar
+dragonaltar/target/DragonAltar-1.4.23.jar
 ```
 
 Maven compiles with Java release 21 and runs the JUnit suite.
